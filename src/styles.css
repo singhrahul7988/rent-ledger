@@ -1598,6 +1598,48 @@ body {
   font-weight: 700;
 }
 
+.avatar-btn {
+  border: 0;
+  cursor: pointer;
+}
+
+.profile-menu {
+  position: relative;
+}
+
+.profile-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 12px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  z-index: 30;
+}
+
+.profile-menu-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.profile-menu-email {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-gray-600);
+}
+
+.profile-menu-account {
+  margin: 0 0 4px;
+  font-size: 11px;
+}
+
 .dashboard-content {
   padding: 32px;
   width: 100%;

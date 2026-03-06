@@ -2,19 +2,50 @@ const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API_BASE = rawBaseUrl.endsWith("/api/v1")
   ? rawBaseUrl
   : `${rawBaseUrl.replace(/\/$/, "")}/api/v1`;
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 12000);
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  let response;
 
-  const payload = await response.json().catch(() => ({}));
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      ...options,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error && typeof error === "object" && error.name === "AbortError") {
+      throw new Error(`Request timeout after ${API_TIMEOUT_MS}ms. Check backend availability.`);
+    }
+    throw new Error(`Failed to reach backend at ${API_BASE}. Make sure backend server is running.`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const responseText = await response.text();
+  const payload = responseText
+    ? (() => {
+        try {
+          return JSON.parse(responseText);
+        } catch (_error) {
+          return {};
+        }
+      })()
+    : {};
+
   if (!response.ok) {
-    const message = payload?.error || `Request failed (${response.status})`;
+    let message = payload?.error || payload?.message || "";
+    if (!message && response.status === 404) {
+      message = `API route not found (404): ${path}. Check backend URL/routes.`;
+    }
+    if (!message) {
+      message = `Request failed (${response.status})`;
+    }
     throw new Error(message);
   }
   return payload;

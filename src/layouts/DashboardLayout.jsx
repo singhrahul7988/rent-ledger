@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import {
   confirmPaymentWebhook,
@@ -12,6 +12,11 @@ import {
   initiatePayment,
   requestLoan,
 } from "../lib/apiClient";
+import {
+  clearSessionUser,
+  getUserInitials,
+  loadSessionUser
+} from "../lib/session";
 
 function Dot({ color = "var(--color-green)" }) {
   return <span className="dot" style={{ background: color }} aria-hidden="true"></span>;
@@ -118,8 +123,6 @@ const pageTitleByPath = {
   "/dashboard/help": "Help"
 };
 
-const DEMO_ACCOUNT_ID = import.meta.env.VITE_DEMO_ACCOUNT_ID || "acc_01HQP7S1A9";
-
 function formatAccountLabel(accountId) {
   if (!accountId) return "not connected";
   if (accountId.length <= 14) return accountId;
@@ -150,7 +153,11 @@ function SidebarItem({ item }) {
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const topbarTitle = pageTitleByPath[location.pathname] || "Dashboard";
+  const [currentUser, setCurrentUser] = useState(() => loadSessionUser());
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
   const [dashboardData, setDashboardData] = useState({
     loading: true,
     error: "",
@@ -164,42 +171,87 @@ export default function DashboardLayout() {
     paying: false,
     requestingLoan: false
   });
+  const activeAccountId = currentUser?.accountId || "";
+  const profileInitials = getUserInitials(currentUser);
 
-  const refreshDashboardData = async ({ silent = false } = {}) => {
+  useEffect(() => {
+    if (!currentUser) {
+      navigate("/signin", { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const onWindowMouseDown = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    const onWindowKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onWindowMouseDown);
+    window.addEventListener("keydown", onWindowKeyDown);
+
+    return () => {
+      window.removeEventListener("mousedown", onWindowMouseDown);
+      window.removeEventListener("keydown", onWindowKeyDown);
+    };
+  }, [profileMenuOpen]);
+
+  const handleSignOut = () => {
+    clearSessionUser();
+    setProfileMenuOpen(false);
+    setCurrentUser(null);
+  };
+
+  const refreshDashboardData = useCallback(async ({ silent = false } = {}) => {
+    if (!activeAccountId) return;
+
     if (!silent) {
       setDashboardData((prev) => ({ ...prev, loading: true, error: "" }));
     }
 
-    try {
-      const [leaseRes, paymentRes, rentScoreRes, loanRes, transactionRes] = await Promise.all([
-        getLeases(DEMO_ACCOUNT_ID),
-        getPayments(DEMO_ACCOUNT_ID),
-        getRentScore(DEMO_ACCOUNT_ID),
-        getLoans(DEMO_ACCOUNT_ID),
-        getTransactions(DEMO_ACCOUNT_ID)
-      ]);
+    const [leaseRes, paymentRes, rentScoreRes, loanRes, transactionRes] = await Promise.allSettled([
+        getLeases(activeAccountId),
+        getPayments(activeAccountId),
+        getRentScore(activeAccountId),
+        getLoans(activeAccountId),
+        getTransactions(activeAccountId)
+    ]);
 
-      setDashboardData({
-        loading: false,
-        error: "",
-        leases: leaseRes.items || [],
-        payments: paymentRes.items || [],
-        transactions: transactionRes.items || [],
-        loans: loanRes.items || [],
-        rentScore: rentScoreRes
+    const errors = [leaseRes, paymentRes, rentScoreRes, loanRes, transactionRes]
+      .filter((result) => result.status === "rejected")
+      .map((result) => {
+        const reason = result.reason;
+        if (reason instanceof Error && reason.message) return reason.message;
+        return "Unable to load some dashboard data.";
       });
-    } catch (error) {
-      setDashboardData((prev) => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : "Unable to load dashboard data."
-      }));
-    }
-  };
+
+    setDashboardData((prev) => ({
+      loading: false,
+      error: errors.length ? errors[0] : "",
+      leases: leaseRes.status === "fulfilled" ? leaseRes.value.items || [] : prev.leases,
+      payments: paymentRes.status === "fulfilled" ? paymentRes.value.items || [] : prev.payments,
+      transactions: transactionRes.status === "fulfilled" ? transactionRes.value.items || [] : prev.transactions,
+      loans: loanRes.status === "fulfilled" ? loanRes.value.items || [] : prev.loans,
+      rentScore: rentScoreRes.status === "fulfilled" ? rentScoreRes.value : prev.rentScore
+    }));
+  }, [activeAccountId]);
 
   useEffect(() => {
+    if (!currentUser) return;
     refreshDashboardData();
-  }, []);
+  }, [currentUser, refreshDashboardData]);
 
   const submitRentPayment = async ({
     leaseId,
@@ -211,7 +263,7 @@ export default function DashboardLayout() {
     try {
       const initiated = await initiatePayment({
         leaseId,
-        payerAccountId: DEMO_ACCOUNT_ID,
+        payerAccountId: activeAccountId,
         amountUsd,
         processingFeeUsd,
         dueDate
@@ -233,7 +285,7 @@ export default function DashboardLayout() {
     setActionState((prev) => ({ ...prev, requestingLoan: true }));
     try {
       const response = await requestLoan({
-        accountId: DEMO_ACCOUNT_ID,
+        accountId: activeAccountId,
         tier,
         amountUsd
       });
@@ -246,13 +298,13 @@ export default function DashboardLayout() {
 
   const checkLoanEligibility = (requestedTier) =>
     getLoanEligibility({
-      accountId: DEMO_ACCOUNT_ID,
+      accountId: activeAccountId,
       requestedTier
     });
 
   const outletContext = useMemo(
     () => ({
-      accountId: DEMO_ACCOUNT_ID,
+      accountId: activeAccountId,
       ...dashboardData,
       ...actionState,
       refreshDashboardData,
@@ -260,8 +312,12 @@ export default function DashboardLayout() {
       requestLoanAction,
       checkLoanEligibility
     }),
-    [dashboardData, actionState]
+    [activeAccountId, dashboardData, actionState]
   );
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <div className="dashboard-shell">
@@ -289,7 +345,7 @@ export default function DashboardLayout() {
         <div className="sidebar-bottom">
           <div className="wallet-indicator">
             <Dot />
-            <span>My Account: {formatAccountLabel(DEMO_ACCOUNT_ID)}</span>
+            <span>My Account: {formatAccountLabel(activeAccountId)}</span>
           </div>
           <p className="creditcoin-note">
             Powered by <span className="creditcoin-brand">credit coin</span>
@@ -318,7 +374,32 @@ export default function DashboardLayout() {
                 />
               </svg>
             </button>
-            <span className="avatar">SC</span>
+            <div className="profile-menu" ref={profileMenuRef}>
+              <button
+                type="button"
+                className="avatar avatar-btn"
+                aria-label="Open profile menu"
+                aria-expanded={profileMenuOpen}
+                onClick={() => setProfileMenuOpen((open) => !open)}
+              >
+                {profileInitials}
+              </button>
+              {profileMenuOpen ? (
+                <div className="profile-menu-panel" role="menu">
+                  <p className="profile-menu-name">{currentUser.fullName}</p>
+                  <p className="profile-menu-email">{currentUser.email}</p>
+                  <p className="profile-menu-account mono">{activeAccountId}</p>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="btn btn-secondary small full-width"
+                    onClick={handleSignOut}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 

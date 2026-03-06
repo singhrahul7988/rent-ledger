@@ -1,11 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
+import { saveSessionUser } from "../lib/session";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const fullName = String(formData.get("fullName") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    saveSessionUser({ fullName, email });
     navigate("/dashboard");
   };
 
