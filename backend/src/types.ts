@@ -6,6 +6,7 @@ export type TransactionStatus = "SUCCESS" | "PENDING" | "FAILED";
 export interface Lease {
   leaseId: string;
   tenantAccountId: string;
+  onchainLeaseId?: string;
   landlordName: string;
   landlordAccountAddress: string;
   monthlyRentUsd: number;

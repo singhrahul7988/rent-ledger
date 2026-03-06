@@ -22,6 +22,12 @@ const supportChannels = [
   { channel: "Priority Loan Desk", availability: "Business hours", target: "Reply in under 2 hours" }
 ];
 
+const systemServices = [
+  { name: "Creditcoin testnet", status: "OPERATIONAL", tone: "system-operational" },
+  { name: "Payment bridge sandbox", status: "OPERATIONAL", tone: "system-operational" },
+  { name: "Report sharing services", status: "OPERATIONAL", tone: "system-operational" }
+];
+
 export default function HelpPage() {
   return (
     <>
@@ -49,18 +55,12 @@ export default function HelpPage() {
             <h3>System Status</h3>
           </div>
           <div className="settings-stack">
-            <div className="settings-item">
-              <p>Creditcoin testnet</p>
-              <span className="status-tag active">OPERATIONAL</span>
-            </div>
-            <div className="settings-item">
-              <p>Payment bridge sandbox</p>
-              <span className="status-tag active">OPERATIONAL</span>
-            </div>
-            <div className="settings-item">
-              <p>Report sharing services</p>
-              <span className="status-tag active">OPERATIONAL</span>
-            </div>
+            {systemServices.map((item) => (
+              <div className="settings-item" key={item.name}>
+                <p>{item.name}</p>
+                <span className={`status-tag ${item.tone}`}>{item.status}</span>
+              </div>
+            ))}
           </div>
         </article>
       </section>

@@ -10,7 +10,11 @@ const initiateSchema = z.object({
   payerAccountId: z.string().min(3),
   amountUsd: z.number().positive(),
   processingFeeUsd: z.number().min(0),
-  dueDate: z.string().min(8)
+  dueDate: z.string().min(8),
+  leaseName: z.string().min(2).optional(),
+  landlordName: z.string().min(2).optional(),
+  landlordAccountAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+  notes: z.string().max(600).optional()
 });
 
 const webhookSchema = z.object({
@@ -24,9 +28,16 @@ type PaymentIntent = {
   paymentIntentId: string;
   leaseId: string;
   payerAccountId: string;
+  leaseName?: string;
+  landlordName?: string;
+  landlordAccountAddress?: string;
   amountUsd: number;
+  monthlyRentUsd: number;
+  dueDay: number;
+  onchainLeaseId?: string;
   processingFeeUsd: number;
   dueDate: string;
+  notes?: string;
   status: "PENDING_ONCHAIN" | "CONFIRMED" | "FAILED";
 };
 
@@ -53,13 +64,30 @@ export function paymentsRouter(blockchainService: BlockchainService) {
     }
 
     const paymentIntentId = `pay_${Math.random().toString(36).slice(2, 7)}`;
+    if (parsed.data.landlordName) {
+      lease.landlordName = parsed.data.landlordName.trim();
+    }
+    if (parsed.data.landlordAccountAddress) {
+      lease.landlordAccountAddress = parsed.data.landlordAccountAddress;
+    }
+    if (parsed.data.amountUsd > 0) {
+      lease.monthlyRentUsd = parsed.data.amountUsd;
+    }
+
     paymentIntents.push({
       paymentIntentId,
       leaseId: parsed.data.leaseId,
       payerAccountId: parsed.data.payerAccountId,
+      leaseName: parsed.data.leaseName,
+      landlordName: parsed.data.landlordName || lease.landlordName,
+      landlordAccountAddress: parsed.data.landlordAccountAddress || lease.landlordAccountAddress,
       amountUsd: parsed.data.amountUsd,
+      monthlyRentUsd: lease.monthlyRentUsd,
+      dueDay: lease.dueDay,
+      onchainLeaseId: lease.onchainLeaseId,
       processingFeeUsd: parsed.data.processingFeeUsd,
       dueDate: parsed.data.dueDate,
+      notes: parsed.data.notes,
       status: "PENDING_ONCHAIN"
     });
 
@@ -89,7 +117,11 @@ export function paymentsRouter(blockchainService: BlockchainService) {
     const onchain = await blockchainService.recordPaymentOnChain({
       leaseId: intent.leaseId,
       amountUsd: intent.amountUsd,
-      statusCode: 1
+      statusCode: 1,
+      dueDay: intent.dueDay,
+      monthlyRentUsd: intent.monthlyRentUsd,
+      landlordAccountAddress: intent.landlordAccountAddress,
+      onchainLeaseId: intent.onchainLeaseId
     });
 
     intent.status = "CONFIRMED";
@@ -112,6 +144,9 @@ export function paymentsRouter(blockchainService: BlockchainService) {
     });
 
     const lease = leases.find((l) => l.leaseId === intent.leaseId);
+    if (lease && onchain.onchainLeaseId) {
+      lease.onchainLeaseId = onchain.onchainLeaseId;
+    }
     const accountPayments = payments.filter((p) =>
       leases.some((l) => l.leaseId === p.leaseId && l.tenantAccountId === lease?.tenantAccountId)
     );

@@ -14,7 +14,8 @@ import {
 } from "../lib/apiClient";
 import {
   clearSessionUser,
-  loadSessionUser
+  loadSessionUser,
+  saveSessionUser
 } from "../lib/session";
 
 function Dot({ color = "var(--color-green)" }) {
@@ -84,7 +85,7 @@ const sidebarGroups = [
       {
         name: "Loans",
         path: "/dashboard/loans",
-        icon: "M4 8h16M4 16h16M8 4v16M16 4v16"
+        icon: "M8 6h8M9 6l1.8-2h2.4L15 6M10 9c-3 2.3-5 5.9-5 9.4 0 3.2 2.7 5.6 7 5.6s7-2.4 7-5.6c0-3.5-2-7.1-5-9.4M12 12v8M10.2 14.3c.3-.8 1-1.3 1.8-1.3h.3c1 0 1.7.7 1.7 1.6 0 .7-.4 1.3-1.1 1.5l-1.8.6c-.7.2-1.1.8-1.1 1.5 0 .9.7 1.6 1.7 1.6h.3c.8 0 1.5-.5 1.8-1.3"
       },
       {
         name: "Transactions",
@@ -99,7 +100,7 @@ const sidebarGroups = [
       {
         name: "Settings",
         path: "/dashboard/settings",
-        icon: "M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"
+        icon: "M9.6 4.1c.1-.6.6-1.1 1.2-1.1h2.4c.6 0 1.1.5 1.2 1.1l.2 1.3c.1.3.3.6.6.8.3.1.6.3.9.5.3.2.7.2 1.1.1l1.1-.6c.5-.2 1.1 0 1.4.4l1.2 2.1c.3.5.2 1.1-.2 1.4l-1 .8c-.3.3-.5.6-.4 1 .1.3.1.6 0 .9 0 .4.1.8.4 1l1 .8c.4.3.5.9.2 1.4l-1.2 2.1c-.3.4-.9.6-1.4.4l-1.1-.6c-.4-.2-.8-.1-1.1.1-.3.2-.6.4-.9.5-.3.2-.5.5-.6.8l-.2 1.3c-.1.6-.6 1.1-1.2 1.1h-2.4c-.6 0-1.1-.5-1.2-1.1l-.2-1.3c-.1-.3-.3-.6-.6-.8-.3-.1-.6-.3-.9-.5-.3-.2-.7-.2-1.1-.1l-1.1.6c-.5.2-1.1 0-1.4-.4l-1.2-2.1c-.3-.5-.2-1.1.2-1.4l1-.8c.3-.2.5-.6.4-1a4.6 4.6 0 0 1 0-.9c0-.4-.1-.8-.4-1l-1-.8c-.4-.3-.5-.9-.2-1.4l1.2-2.1c.3-.4.9-.6 1.4-.4l1.1.6c.4.1.8.1 1.1-.1.3-.2.6-.4.9-.5.3-.2.5-.5.6-.8l.2-1.3zM12 15.8a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6z"
       },
       {
         name: "Help",
@@ -259,6 +260,19 @@ export default function DashboardLayout() {
     setCurrentUser(null);
   };
 
+  const updateSessionUser = useCallback(
+    ({ fullName, email }) => {
+      const saved = saveSessionUser({
+        fullName: fullName || currentUser?.fullName,
+        email: email || currentUser?.email,
+        accountId: activeAccountId
+      });
+      setCurrentUser(saved);
+      return saved;
+    },
+    [activeAccountId, currentUser]
+  );
+
   const refreshDashboardData = useCallback(async ({ silent = false } = {}) => {
     if (!activeAccountId) return;
 
@@ -376,7 +390,11 @@ export default function DashboardLayout() {
     leaseId,
     amountUsd,
     processingFeeUsd,
-    dueDate
+    dueDate,
+    leaseName,
+    landlordName,
+    landlordAccountAddress,
+    notes
   }) => {
     setActionState((prev) => ({ ...prev, paying: true }));
     try {
@@ -385,7 +403,11 @@ export default function DashboardLayout() {
         payerAccountId: activeAccountId,
         amountUsd,
         processingFeeUsd,
-        dueDate
+        dueDate,
+        leaseName,
+        landlordName,
+        landlordAccountAddress,
+        notes
       });
 
       const confirmation = await confirmPaymentWebhook({
@@ -460,9 +482,10 @@ export default function DashboardLayout() {
       refreshDashboardData,
       submitRentPayment,
       requestLoanAction,
-      checkLoanEligibility
+      checkLoanEligibility,
+      updateSessionUser
     }),
-    [currentUser, activeAccountId, dashboardData, actionState]
+    [currentUser, activeAccountId, dashboardData, actionState, updateSessionUser]
   );
 
   if (!currentUser) {

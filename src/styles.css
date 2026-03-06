@@ -2132,6 +2132,27 @@ body {
   border-color: var(--color-gray-100);
 }
 
+.status-tag.service-active,
+.status-tag.system-operational {
+  background: #e8f5ee;
+  color: #1a7a4a;
+  border-color: #bfe4cf;
+}
+
+.status-tag.service-warning,
+.status-tag.system-degraded {
+  background: #fef3db;
+  color: #b36d00;
+  border-color: #f0d896;
+}
+
+.status-tag.service-error,
+.status-tag.system-outage {
+  background: #fdeaea;
+  color: #c0392b;
+  border-color: #f0b8b8;
+}
+
 .progress-list {
   margin-top: 18px;
   display: grid;

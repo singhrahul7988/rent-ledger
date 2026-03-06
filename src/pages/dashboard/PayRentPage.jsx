@@ -26,6 +26,10 @@ function toWholeDollarInput(value) {
   return `${wholeDollars}.00`;
 }
 
+function isAddress(value) {
+  return /^0x[a-fA-F0-9]{40}$/.test(String(value || "").trim());
+}
+
 function formatLeaseOption(lease) {
   if (!lease) return "--";
   return `${lease.leaseId} - Due day ${lease.dueDay}`;
@@ -45,6 +49,7 @@ export default function PayRentPage() {
   const [selectedLeaseId, setSelectedLeaseId] = useState("");
   const [leaseName, setLeaseName] = useState("");
   const [landlordName, setLandlordName] = useState("");
+  const [landlordAccountAddress, setLandlordAccountAddress] = useState("");
   const [rentAmountInput, setRentAmountInput] = useState("");
   const [notes, setNotes] = useState("");
   const [resultMessage, setResultMessage] = useState("");
@@ -68,6 +73,7 @@ export default function PayRentPage() {
         setSelectedLeaseId(typeof parsed.selectedLeaseId === "string" ? parsed.selectedLeaseId : "");
         setLeaseName(typeof parsed.leaseName === "string" ? parsed.leaseName : "");
         setLandlordName(typeof parsed.landlordName === "string" ? parsed.landlordName : "");
+        setLandlordAccountAddress(typeof parsed.landlordAccountAddress === "string" ? parsed.landlordAccountAddress : "");
         setRentAmountInput(typeof parsed.rentAmountInput === "string" ? parsed.rentAmountInput : "");
         setNotes(typeof parsed.notes === "string" ? parsed.notes : "");
         hasStoredDraft = true;
@@ -75,6 +81,7 @@ export default function PayRentPage() {
         setSelectedLeaseId("");
         setLeaseName("");
         setLandlordName("");
+        setLandlordAccountAddress("");
         setRentAmountInput("");
         setNotes("");
       }
@@ -82,6 +89,7 @@ export default function PayRentPage() {
       setSelectedLeaseId("");
       setLeaseName("");
       setLandlordName("");
+      setLandlordAccountAddress("");
       setRentAmountInput("");
       setNotes("");
     }
@@ -109,6 +117,7 @@ export default function PayRentPage() {
 
     setLeaseName(formatLeaseOption(selectedLease));
     setLandlordName(selectedLease.landlordName || "");
+    setLandlordAccountAddress(selectedLease.landlordAccountAddress || "");
     setRentAmountInput(toWholeDollarInput(selectedLease.monthlyRentUsd));
     setNotes("Monthly rent payment.");
     setHasInitialisedDefaults(true);
@@ -121,6 +130,7 @@ export default function PayRentPage() {
       selectedLeaseId,
       leaseName,
       landlordName,
+      landlordAccountAddress,
       rentAmountInput,
       notes
     };
@@ -136,6 +146,7 @@ export default function PayRentPage() {
     selectedLeaseId,
     leaseName,
     landlordName,
+    landlordAccountAddress,
     rentAmountInput,
     notes
   ]);
@@ -168,6 +179,7 @@ export default function PayRentPage() {
   const handleResetForm = () => {
     setLeaseName("");
     setLandlordName("");
+    setLandlordAccountAddress("");
     setRentAmountInput("");
     setNotes("");
     setResultMessage("");
@@ -187,6 +199,10 @@ export default function PayRentPage() {
       setError("Enter landlord name.");
       return;
     }
+    if (!isAddress(landlordAccountAddress)) {
+      setError("Enter a valid landlord wallet address (0x + 40 hex chars).");
+      return;
+    }
     if (rentAmountUsd <= 0) {
       setError("Enter a valid rent amount in x.00 format.");
       return;
@@ -202,7 +218,10 @@ export default function PayRentPage() {
         amountUsd: rentAmountUsd,
         processingFeeUsd: processingFee,
         dueDate: dueDateIso,
-        notes: `${notes} Lease: ${leaseName}. Landlord: ${landlordName}.`
+        leaseName,
+        landlordName,
+        landlordAccountAddress,
+        notes: `${notes} Lease: ${leaseName}. Landlord: ${landlordName}. Address: ${landlordAccountAddress}.`
       });
 
       setResultMessage(
@@ -255,6 +274,15 @@ export default function PayRentPage() {
                 value={landlordName}
                 onChange={(event) => setLandlordName(event.target.value)}
                 placeholder="Enter landlord name"
+              />
+            </label>
+            <label>
+              Landlord Wallet Address
+              <input
+                type="text"
+                value={landlordAccountAddress}
+                onChange={(event) => setLandlordAccountAddress(event.target.value)}
+                placeholder="0x..."
               />
             </label>
             <label>
