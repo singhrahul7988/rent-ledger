@@ -122,12 +122,6 @@ const pageTitleByPath = {
   "/dashboard/help": "Help"
 };
 
-function formatAccountLabel(accountId) {
-  if (!accountId) return "not connected";
-  if (accountId.length <= 14) return accountId;
-  return `${accountId.slice(0, 8)}...${accountId.slice(-4)}`;
-}
-
 function shortenLabel(value, maxLength = 24) {
   const safe = String(value || "").trim();
   if (safe.length <= maxLength) return safe;
@@ -366,11 +360,6 @@ export default function DashboardLayout() {
   }, [dashboardData.transactions, pushNotification]);
 
   const unreadNotifications = notifications.filter((item) => !item.read).length;
-  const topbarMenuStateClass = notificationsOpen
-    ? " notifications-open"
-    : profileMenuOpen
-      ? " profile-open"
-      : "";
 
   const toggleNotifications = () => {
     setNotificationsOpen((open) => {
@@ -464,6 +453,7 @@ export default function DashboardLayout() {
 
   const outletContext = useMemo(
     () => ({
+      currentUser,
       accountId: activeAccountId,
       ...dashboardData,
       ...actionState,
@@ -472,7 +462,7 @@ export default function DashboardLayout() {
       requestLoanAction,
       checkLoanEligibility
     }),
-    [activeAccountId, dashboardData, actionState]
+    [currentUser, activeAccountId, dashboardData, actionState]
   );
 
   if (!currentUser) {
@@ -505,16 +495,21 @@ export default function DashboardLayout() {
         <div className="sidebar-bottom">
           <div className="wallet-indicator">
             <Dot />
-            <span>My Account: {formatAccountLabel(activeAccountId)}</span>
+            <div className="wallet-copy">
+              <span className="wallet-label">Account</span>
+              <span className="wallet-id" title={activeAccountId}>
+                {activeAccountId}
+              </span>
+            </div>
           </div>
           <p className="creditcoin-note">
-            Powered by <span className="creditcoin-brand">credit coin</span>
+            Powered by <span className="creditcoin-brand">Creditcoin</span>
           </p>
         </div>
       </aside>
 
       <div className="dashboard-main">
-        <header className={`dashboard-topbar${topbarMenuStateClass}`}>
+        <header className="dashboard-topbar">
           <h1>{topbarTitle}</h1>
 
           <div className="topbar-right">

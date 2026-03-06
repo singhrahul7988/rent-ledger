@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const tiers = [
@@ -32,6 +32,7 @@ export default function LoansPage() {
   } = useOutletContext();
   const [loanMessage, setLoanMessage] = useState("");
   const [loanError, setLoanError] = useState("");
+  const loanTermsRef = useRef(null);
 
   const score = rentScore?.score || 150;
   const activeLoan = loans[0] || null;
@@ -89,6 +90,10 @@ export default function LoansPage() {
     }
   };
 
+  const scrollToLoanTerms = () => {
+    loanTermsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <>
       <section className="table-card">
@@ -103,7 +108,6 @@ export default function LoansPage() {
             <article className={`loan-tier-card ${tier.className}`} key={tier.tier}>
               <div className="loan-tier-head">
                 <span className={`status-tag ${tier.status.toLowerCase()}`}>{tier.status}</span>
-                <span className="tier-lock-text">{tier.status === "LOCKED" ? "LOCKED" : "UNLOCKED"}</span>
               </div>
               <h4>{tier.tier}</h4>
               <p>
@@ -162,10 +166,10 @@ export default function LoansPage() {
           </div>
           <div className="hero-actions">
             <button className="btn btn-primary" type="button" disabled={!activeLoan}>
-              Repay Installment
+              Pay Next Installment
             </button>
-            <button className="btn btn-secondary" type="button">
-              View Loan Terms
+            <button className="btn btn-secondary" type="button" onClick={scrollToLoanTerms}>
+              Loan Terms
             </button>
           </div>
         </article>
@@ -224,6 +228,24 @@ export default function LoansPage() {
             ) : null}
           </tbody>
         </table>
+        <div className="repayment-actions">
+          <button className="btn btn-secondary small" type="button" onClick={scrollToLoanTerms}>
+            View Loan Terms
+          </button>
+        </div>
+      </section>
+
+      <section className="table-card" id="loan-terms" ref={loanTermsRef}>
+        <div className="panel-header">
+          <h3>Loan Terms</h3>
+        </div>
+        <ul className="loan-terms-list">
+          <li>Installments are billed monthly and due on the date shown in your repayment schedule.</li>
+          <li>On-time installment payments improve reliability and protect tier eligibility.</li>
+          <li>APR is fixed at the approved tier rate for the current loan lifecycle.</li>
+          <li>Early repayment is allowed without prepayment penalties.</li>
+          <li>Missing due dates can restrict future loan requests and increase risk flags.</li>
+        </ul>
       </section>
     </>
   );

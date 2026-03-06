@@ -1,4 +1,33 @@
+import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+
 export default function SettingsPage() {
+  const { currentUser, accountId } = useOutletContext();
+  const [fullName, setFullName] = useState(currentUser?.fullName || "");
+  const [email, setEmail] = useState(currentUser?.email || "");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setFullName(currentUser?.fullName || "");
+    setEmail(currentUser?.email || "");
+  }, [currentUser]);
+
+  const handleCopyAddress = async () => {
+    if (!accountId) return;
+    try {
+      await navigator.clipboard.writeText(accountId);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch (_error) {
+      setCopied(false);
+    }
+  };
+
+  const resetProfileDraft = () => {
+    setFullName(currentUser?.fullName || "");
+    setEmail(currentUser?.email || "");
+  };
+
   return (
     <>
       <section className="dashboard-columns">
@@ -9,11 +38,11 @@ export default function SettingsPage() {
           <div className="form-grid settings-form">
             <label>
               Full Name
-              <input type="text" defaultValue="Sarah Chen" />
+              <input type="text" value={fullName} onChange={(event) => setFullName(event.target.value)} />
             </label>
             <label>
               Email
-              <input type="email" defaultValue="sarah.chen@example.com" />
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
             <label>
               Country
@@ -52,7 +81,7 @@ export default function SettingsPage() {
             <button className="btn btn-primary" type="button">
               Save Preferences
             </button>
-            <button className="btn btn-secondary" type="button">
+            <button className="btn btn-secondary" type="button" onClick={resetProfileDraft}>
               Cancel
             </button>
           </div>
@@ -66,10 +95,10 @@ export default function SettingsPage() {
             <div className="settings-item">
               <div>
                 <p>My Account Address</p>
-                <span className="mono">0x8f21A9...B113</span>
+                <span className="mono">{accountId || "--"}</span>
               </div>
-              <button className="btn btn-ghost small" type="button">
-                Copy
+              <button className="btn btn-ghost small" type="button" onClick={handleCopyAddress}>
+                {copied ? "Copied" : "Copy"}
               </button>
             </div>
             <div className="settings-item">

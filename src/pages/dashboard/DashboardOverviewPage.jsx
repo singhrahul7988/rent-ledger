@@ -63,7 +63,13 @@ export default function DashboardOverviewPage() {
           <p>
             {loading
               ? "Loading your latest payment and score activity..."
-              : `Current score: ${score}. Keep on-time payments flowing to move into the next tier faster.`}
+              : (
+                <>
+                  Current score: {score}. Keep on-time payments flowing
+                  <br />
+                  to move into the next tier faster.
+                </>
+              )}
           </p>
           <div className="hero-actions">
             <Link to="/dashboard/pay-rent" className="btn btn-primary btn-link">

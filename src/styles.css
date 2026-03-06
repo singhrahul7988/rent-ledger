@@ -1424,7 +1424,7 @@ body {
 
 .sidebar-group-label {
   margin: 10px 6px 7px;
-  color: #5a7f9f;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -1476,34 +1476,55 @@ body {
 
 .sidebar-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding-top: 14px;
+  padding-top: 12px;
 }
 
 .wallet-indicator {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   color: #d8e7f6;
-  font-size: 12px;
+}
+
+.wallet-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.wallet-label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #9db7d2;
+  font-weight: 600;
+}
+
+.wallet-id {
   font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8f0fb;
+  line-height: 1.2;
+  word-break: break-all;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   flex: 0 0 auto;
+  margin-top: 5px;
 }
 
 .creditcoin-note {
-  margin: 10px 0 0;
-  color: #a9c1da;
+  margin: 10px 0 0 17px;
+  color: #9db7d2;
   font-size: 11px;
 }
 
 .creditcoin-brand {
   color: var(--color-orange);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .dashboard-main {
@@ -1517,22 +1538,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  min-height: 64px;
+  height: 64px;
   background: var(--color-white);
   border-bottom: 1px solid var(--color-gray-100);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  transition: padding-bottom 180ms ease;
-}
-
-.dashboard-topbar.profile-open {
-  padding-bottom: 210px;
-}
-
-.dashboard-topbar.notifications-open {
-  padding-bottom: 250px;
 }
 
 .dashboard-topbar h1 {
@@ -1826,6 +1838,13 @@ body {
   gap: 24px;
 }
 
+.dashboard-hero-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 8px;
+}
+
 .dashboard-hero-left h2 {
   margin: 0;
   font-size: 28px;
@@ -1847,17 +1866,41 @@ body {
 }
 
 .dashboard-score {
-  display: grid;
-  place-items: center;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   justify-self: start;
-  padding-left: 8px;
+  padding-left: 0;
+  transform: translateX(-210px);
+}
+
+.dashboard-score .gauge-center {
+  margin-top: 0;
+  transform: translateY(8px);
+}
+
+.dashboard-score .gauge-center strong {
+  font-size: 74px;
+  line-height: 0.92;
+}
+
+.dashboard-score .gauge-center span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #111111;
 }
 
 .score-gauge-large {
   position: relative;
   width: 220px;
   height: 220px;
+}
+
+.dashboard-score .score-gauge-large {
+  width: 204px;
+  height: 204px;
 }
 
 .dashboard-gauge-track,
@@ -1886,6 +1929,10 @@ body {
   border-radius: 100px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.dashboard-score .tier-tag {
+  margin-top: -6px;
 }
 
 .tier-tag.established {
@@ -2269,6 +2316,37 @@ body {
   line-height: 1.5;
 }
 
+.pay-summary-card .summary-rows {
+  gap: 12px;
+}
+
+.pay-summary-card .status-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin: 14px auto 0;
+  text-align: center;
+}
+
+.pay-summary-card .summary-note {
+  margin-top: 18px;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+.summary-actions-box {
+  margin-top: 18px;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--color-gray-50);
+}
+
+.summary-actions-box .btn {
+  justify-content: center;
+}
+
 .action-success,
 .action-error {
   margin: 14px 0 0;
@@ -2339,6 +2417,13 @@ body {
 }
 
 .rentscore-grid,
+.rentscore-lower-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
 .report-grid {
   display: grid;
   grid-template-columns: 1.25fr 0.75fr;
@@ -2358,6 +2443,20 @@ body {
   color: var(--color-gray-600);
   line-height: 1.55;
   max-width: 440px;
+}
+
+.rentscore-summary {
+  padding: 6px 0;
+}
+
+.rentscore-summary .hero-actions {
+  margin-top: 22px;
+  gap: 10px;
+}
+
+.rentscore-summary .hero-actions .btn {
+  min-width: 188px;
+  white-space: nowrap;
 }
 
 .trend-chart {
@@ -2490,10 +2589,123 @@ body {
 .report-actions {
   display: grid;
   gap: 8px;
+  transform: translateY(12px);
+}
+
+.btn-inline-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mini-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: var(--color-white);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-share-output {
+  margin-top: 26px;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 12px;
+  background: var(--color-gray-50);
+  padding: 12px;
+}
+
+.report-share-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.report-share-url {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.report-share-meta {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-share-meta span {
+  border: 1px solid var(--color-gray-100);
+  background: var(--color-white);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--color-gray-600);
+  font-weight: 600;
+}
+
+.report-share-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.report-share-once-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-amber);
+}
+
+.report-share-placeholder {
+  margin: 0;
+  color: var(--color-gray-600);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .report-form-grid {
   grid-template-columns: 1fr;
+}
+
+.setting-check {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 10px;
+  background: var(--color-gray-50);
+  padding: 10px 12px;
+  color: var(--color-gray-900) !important;
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+.setting-check span {
+  order: 1;
+  flex: 1;
+  text-align: left;
+}
+
+.setting-check input[type="checkbox"] {
+  order: 2;
+  width: 16px;
+  height: 16px;
+  margin-left: 12px;
+  accent-color: var(--color-orange);
 }
 
 .report-lower-grid {
@@ -2621,12 +2833,6 @@ body {
   align-items: center;
 }
 
-.tier-lock-text {
-  color: var(--color-gray-600);
-  font-size: 11px;
-  font-weight: 700;
-}
-
 .loan-tier-card.tier-1 {
   border-left-color: var(--color-amber);
 }
@@ -2651,20 +2857,36 @@ body {
 
 .apr-comparison p {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-gray-600);
 }
 
 .apr-comparison strong {
   display: block;
   margin-top: 4px;
-  font-size: 18px;
+  font-size: 21px;
   font-family: "DM Serif Display", serif;
   color: var(--color-gray-900);
 }
 
 .apr-comparison .bad-apr {
   color: var(--color-red);
+}
+
+.repayment-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loan-terms-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  color: var(--color-gray-600);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .settings-form {

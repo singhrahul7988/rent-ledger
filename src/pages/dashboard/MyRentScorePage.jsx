@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 function tierLabel(score) {
   if (score >= 700) return "Credit Trusted";
@@ -17,15 +17,66 @@ function tierClass(score) {
   return "building";
 }
 
+function escapePdfText(value) {
+  return String(value || "")
+    .replace(/[^\x20-\x7E]/g, "?")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function buildPdfBlob(lines) {
+  const encoder = new TextEncoder();
+  const lineHeight = 18;
+  const startY = 760;
+
+  const content = lines
+    .slice(0, 36)
+    .map((line, index) => {
+      const y = startY - index * lineHeight;
+      return `BT\n/F1 12 Tf\n1 0 0 1 40 ${y} Tm\n(${escapePdfText(line)}) Tj\nET`;
+    })
+    .join("\n");
+
+  const byteLength = encoder.encode(content).length;
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    `5 0 obj\n<< /Length ${byteLength} >>\nstream\n${content}\nendstream\nendobj\n`
+  ];
+
+  const header = "%PDF-1.4\n%----\n";
+  const chunks = [header];
+  const offsets = [0];
+  let currentOffset = encoder.encode(header).length;
+
+  objects.forEach((objectText) => {
+    offsets.push(currentOffset);
+    chunks.push(objectText);
+    currentOffset += encoder.encode(objectText).length;
+  });
+
+  const xrefStart = currentOffset;
+  const xrefLines = ["xref", "0 6", "0000000000 65535 f "];
+  for (let i = 1; i <= 5; i += 1) {
+    xrefLines.push(`${String(offsets[i]).padStart(10, "0")} 00000 n `);
+  }
+
+  const trailer = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  chunks.push(`${xrefLines.join("\n")}\n`);
+  chunks.push(trailer);
+
+  return new Blob(chunks, { type: "application/pdf" });
+}
+
 function buildTrend(payments, finalScore) {
   const sorted = [...payments].sort(
     (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
   );
   if (sorted.length === 0) {
-    return [
-      { month: "Start", score: 150 },
-      { month: "Current", score: finalScore }
-    ];
+    return [{ month: "Start", score: 150 }];
   }
 
   let runningScore = 150;
@@ -43,7 +94,8 @@ function buildTrend(payments, finalScore) {
 }
 
 export default function MyRentScorePage() {
-  const { rentScore, payments } = useOutletContext();
+  const navigate = useNavigate();
+  const { accountId, rentScore, payments } = useOutletContext();
   const score = rentScore?.score || 150;
   const gaugeProgress = Number(((score / 850) * 75).toFixed(2));
   const trend = useMemo(() => buildTrend(payments, score), [payments, score]);
@@ -94,6 +146,52 @@ export default function MyRentScorePage() {
     "Avoid late payments to protect your current tier."
   ];
 
+  const handleDownloadScoreReport = () => {
+    const generatedAt = new Date();
+    const paymentCount = payments.length;
+    const onTimeCount = payments.filter((item) => item.status === "ON_TIME").length;
+    const lateCount = Math.max(0, paymentCount - onTimeCount);
+    const avgRent = paymentCount
+      ? Math.round(payments.reduce((sum, record) => sum + Number(record.amountUsd || 0), 0) / paymentCount)
+      : Math.round(factors.avgRentUsd || 0);
+
+    const lines = [
+      "RentLedger Score Report",
+      "",
+      `Generated: ${generatedAt.toLocaleString("en-US")}`,
+      `Account ID: ${accountId || "N/A"}`,
+      "",
+      "Current Score Snapshot",
+      `RentScore: ${score}`,
+      `Tier: ${tierLabel(score)}`,
+      `Points to next tier: ${rentScore?.pointsToNextTier || 0}`,
+      "",
+      "Payment Summary",
+      `Total payments: ${paymentCount}`,
+      `On-time payments: ${onTimeCount}`,
+      `Late payments: ${lateCount}`,
+      `Average monthly rent (USD): ${avgRent}`,
+      "",
+      "Scoring Factors",
+      `Payment Count: +${Math.min(factors.onTimePayments * 30, 300)}`,
+      `Consistency Bonus: ${factors.onTimePayments >= 6 ? "+50" : "+0"}`,
+      `Rental Amount Tier: ${factors.avgRentUsd >= 1000 ? "+50" : factors.avgRentUsd >= 500 ? "+30" : "+10"}`,
+      `Tenure Bonus: ${factors.tenureMonths >= 12 ? "+50" : factors.tenureMonths >= 6 ? "+25" : "+0"}`,
+      `Late Payment Penalty: -${factors.latePayments * 15}`
+    ];
+
+    const blob = buildPdfBlob(lines);
+    const url = window.URL.createObjectURL(blob);
+    const stamp = generatedAt.toISOString().slice(0, 10);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `rentledger-score-report-${stamp}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1500);
+  };
+
   return (
     <>
       <section className="rentscore-grid">
@@ -130,10 +228,18 @@ export default function MyRentScorePage() {
                 tier. Keep monthly rent on time to accelerate eligibility.
               </p>
               <div className="hero-actions">
-                <button className="btn btn-primary" type="button">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => navigate("/dashboard/pay-rent")}
+                >
                   Improve My Score
                 </button>
-                <button className="btn btn-secondary" type="button">
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={handleDownloadScoreReport}
+                >
                   Download Score Report
                 </button>
               </div>
@@ -162,7 +268,7 @@ export default function MyRentScorePage() {
         </article>
       </section>
 
-      <section className="dashboard-columns">
+      <section className="dashboard-columns rentscore-lower-grid">
         <article className="panel-card">
           <div className="panel-header">
             <h3>Score Factors</h3>

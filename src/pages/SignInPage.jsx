@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import {
   DEMO_JUDGE_EMAIL,
@@ -19,7 +19,7 @@ export default function SignInPage() {
     const password = String(formData.get("password") || "");
 
     if (email !== DEMO_JUDGE_EMAIL.toLowerCase() || password !== DEMO_JUDGE_PASSWORD) {
-      setAuthError("Use the judge demo credentials shown below.");
+      setAuthError("Use the active demo account credentials shown below.");
       return;
     }
 
@@ -34,10 +34,7 @@ export default function SignInPage() {
         <div className="container auth-topbar-inner">
           <Brand />
           <div className="auth-topbar-cta">
-            <span>New to RentLedger?</span>
-            <Link to="/signup" className="btn btn-secondary btn-link">
-              Create Account
-            </Link>
+            <span>Single account demo access enabled.</span>
           </div>
         </div>
       </header>
@@ -68,7 +65,7 @@ export default function SignInPage() {
                 type="password"
                 name="password"
                 autoComplete="current-password"
-                placeholder="Enter judge demo password"
+                placeholder="Enter account password"
                 required
               />
             </label>
@@ -78,9 +75,6 @@ export default function SignInPage() {
                 <input type="checkbox" name="remember" />
                 Keep me signed in on this device
               </label>
-              <Link to="/signup" className="auth-inline-link">
-                Need an account?
-              </Link>
             </div>
 
             <button type="submit" className="btn btn-primary full-width">
@@ -90,7 +84,7 @@ export default function SignInPage() {
 
           {authError ? <p className="action-error">{authError}</p> : null}
           <div className="demo-credentials-card">
-            <p className="demo-credentials-title">Judge Demo Account</p>
+            <p className="demo-credentials-title">Demo Access Account</p>
             <p>
               Email: <code>{DEMO_JUDGE_EMAIL}</code>
             </p>
@@ -99,7 +93,7 @@ export default function SignInPage() {
             </p>
           </div>
           <p className="auth-footnote">
-            Use this single account during judging so all transactions are visible in one history.
+            Use this single account so all transactions remain visible in one history.
           </p>
         </section>
 
