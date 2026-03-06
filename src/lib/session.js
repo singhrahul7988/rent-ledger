@@ -1,8 +1,8 @@
 const SESSION_KEY = "rentledger_user";
 const DEFAULT_ACCOUNT_ID = import.meta.env.VITE_DEMO_ACCOUNT_ID || "acc_01HQP7S1A9";
-const DEMO_JUDGE_EMAIL = import.meta.env.VITE_DEMO_JUDGE_EMAIL || "creditcoin7@gmail.com";
-const DEMO_JUDGE_PASSWORD = import.meta.env.VITE_DEMO_JUDGE_PASSWORD || "credit31";
-const DEMO_JUDGE_NAME = import.meta.env.VITE_DEMO_JUDGE_NAME || "Creditcoin Demo User";
+const DEMO_JUDGE_EMAIL = "creditcoin7@gmail.com";
+const DEMO_JUDGE_PASSWORD = "credit31";
+const DEMO_JUDGE_NAME = "Creditcoin Demo User";
 
 function normalizeWhitespace(value) {
   return String(value || "").trim().replace(/\s+/g, " ");

@@ -54,8 +54,8 @@ export default function PricingPage() {
             <Link to="/signin" className="btn btn-secondary btn-link">
               Sign In
             </Link>
-            <Link to="/signup" className="btn btn-primary btn-link">
-              Start Building Credit
+            <Link to="/signin" className="btn btn-primary btn-link">
+              Open Demo Account
             </Link>
           </div>
         </div>
@@ -88,8 +88,8 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <Link to={`/signup?plan=${plan.name.toLowerCase()}`} className="btn btn-primary btn-link full-width">
-                Choose {plan.name}
+              <Link to="/signin" className="btn btn-primary btn-link full-width">
+                Continue to Sign In
               </Link>
             </article>
           ))}

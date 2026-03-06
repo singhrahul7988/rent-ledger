@@ -27,8 +27,8 @@ export default function Hero() {
           </p>
 
           <div className="hero-cta">
-            <Link to="/signup" className="btn btn-primary btn-link">
-              Start Building Credit Free
+            <Link to="/signin" className="btn btn-primary btn-link">
+              Open Demo Account
             </Link>
             <a href="#how-it-works" className="btn btn-outline btn-link">
               See How It Works -&gt;

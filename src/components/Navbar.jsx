@@ -18,8 +18,8 @@ export default function Navbar({ scrolled }) {
           <Link to="/signin" className="btn btn-ghost btn-link">
             Sign In
           </Link>
-          <Link to="/signup" className="btn btn-primary btn-link">
-            Start Building Credit
+          <Link to="/signin" className="btn btn-primary btn-link">
+            Open Demo Account
           </Link>
         </div>
       </div>

@@ -60,9 +60,9 @@ npm run test
 
 ## 2) End-to-end demo flow (frontend -> backend APIs)
 
-1. Open `/signin` and use the judge demo account:
-   - email: `judge@rentledger.demo`
-   - password: `rentledger-demo`
+1. Open `/signin` and use the demo account:
+   - email: `creditcoin7@gmail.com`
+   - password: `credit31`
 2. Go to **Pay Rent** and click **Record Payment**.
 3. Verify updates in:
    - Dashboard (score + payment certificate cards)
