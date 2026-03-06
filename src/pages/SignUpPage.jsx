@@ -1,16 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
-import { saveSessionUser } from "../lib/session";
+import { DEMO_JUDGE_USER, saveSessionUser } from "../lib/session";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const fullName = String(formData.get("fullName") || "").trim();
-    const email = String(formData.get("email") || "").trim();
-    saveSessionUser({ fullName, email });
+    saveSessionUser(DEMO_JUDGE_USER);
     navigate("/dashboard");
   };
 
@@ -109,7 +106,7 @@ export default function SignUpPage() {
           </form>
 
           <p className="auth-footnote">
-            By creating an account, your payment records can be used to calculate your RentScore.
+            Hackathon demo mode uses one shared judge account so transaction history stays in a single profile.
           </p>
         </section>
 

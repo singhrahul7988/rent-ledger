@@ -10,7 +10,8 @@ function formatUsd(value) {
 }
 
 function explorerUrlFromHash(txHash) {
-  return `https://explorer.creditcoin.network/tx/${txHash.replace("...", "")}`;
+  if (!txHash || txHash.includes("...")) return "";
+  return `https://creditcoin-testnet.blockscout.com/tx/${txHash}`;
 }
 
 function monthToYear(monthLabel) {
@@ -117,36 +118,51 @@ export default function PaymentHistoryPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredPayments.map((record) => (
-              <tr key={record.paymentRecordId}>
-                <td>{record.month}</td>
-                <td>{formatUsd(record.amountUsd)}</td>
-                <td>
-                  <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
-                    {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
-                  </span>
-                </td>
-                <td>{record.paymentRecordId.toUpperCase()}</td>
-                <td>Automated Transfer</td>
-                <td>{new Date(record.confirmedAt).toLocaleDateString("en-US")}</td>
-                <td className="mono">{record.txHash}</td>
-                <td>
-                  <div className="row-actions">
-                    <button className="btn btn-ghost small" type="button" onClick={() => copyHash(record.txHash)}>
-                      {copiedHash === record.txHash ? "Copied" : "Copy"}
-                    </button>
-                    <a
-                      className="btn btn-ghost small btn-link"
-                      href={explorerUrlFromHash(record.txHash)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Explorer
-                    </a>
-                  </div>
-                </td>
+            {filteredPayments.length > 0 ? (
+              filteredPayments.map((record) => {
+                const explorerUrl = explorerUrlFromHash(record.txHash);
+                return (
+                  <tr key={record.paymentRecordId}>
+                    <td>{record.month}</td>
+                    <td>{formatUsd(record.amountUsd)}</td>
+                    <td>
+                      <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
+                        {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
+                      </span>
+                    </td>
+                    <td>{record.paymentRecordId.toUpperCase()}</td>
+                    <td>Automated Transfer</td>
+                    <td>{new Date(record.confirmedAt).toLocaleDateString("en-US")}</td>
+                    <td className="mono">{record.txHash}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="btn btn-ghost small" type="button" onClick={() => copyHash(record.txHash)}>
+                          {copiedHash === record.txHash ? "Copied" : "Copy"}
+                        </button>
+                        {explorerUrl ? (
+                          <a
+                            className="btn btn-ghost small btn-link"
+                            href={explorerUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Explorer
+                          </a>
+                        ) : (
+                          <button className="btn btn-ghost small" type="button" disabled>
+                            Explorer
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={8}>No payments yet. Record your first rent payment to start history.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </section>

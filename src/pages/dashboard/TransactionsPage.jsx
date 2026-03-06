@@ -71,35 +71,47 @@ export default function TransactionsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredTransactions.map((tx) => {
-              const txDate = new Date(tx.timestamp);
-              return (
-                <tr key={tx.eventId}>
-                  <td>{eventLabel(tx.eventType)}</td>
-                  <td>{txDate.toLocaleDateString("en-US")}</td>
-                  <td>{txDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</td>
-                  <td>
-                    <span className={`status-tag ${statusTone(tx.status)}`}>{tx.status}</span>
-                  </td>
-                  <td className="mono">{tx.txHash}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="btn btn-ghost small" type="button" onClick={() => copyHash(tx.txHash)}>
-                        Copy
-                      </button>
-                      <a
-                        className="btn btn-ghost small btn-link"
-                        href={tx.explorerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Explorer
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map((tx) => {
+                const txDate = new Date(tx.timestamp);
+                return (
+                  <tr key={tx.eventId}>
+                    <td>{eventLabel(tx.eventType)}</td>
+                    <td>{txDate.toLocaleDateString("en-US")}</td>
+                    <td>{txDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</td>
+                    <td>
+                      <span className={`status-tag ${statusTone(tx.status)}`}>{tx.status}</span>
+                    </td>
+                    <td className="mono">{tx.txHash}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="btn btn-ghost small" type="button" onClick={() => copyHash(tx.txHash)}>
+                          Copy
+                        </button>
+                        {tx.explorerUrl ? (
+                          <a
+                            className="btn btn-ghost small btn-link"
+                            href={tx.explorerUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Explorer
+                          </a>
+                        ) : (
+                          <button className="btn btn-ghost small" type="button" disabled>
+                            Explorer
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={6}>No transaction events yet. Complete a payment to generate on-chain references.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

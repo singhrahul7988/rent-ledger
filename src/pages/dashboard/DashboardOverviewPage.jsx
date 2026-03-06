@@ -133,23 +133,27 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="certificate-grid">
-            {recentPayments.map((record) => (
-              <div className="certificate-item" key={record.paymentRecordId}>
-                <div className="certificate-top">
-                  <span className="chain-mini" aria-hidden="true">
-                    #
-                  </span>
-                  <span
-                    className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}
-                  >
-                    {paymentStatusText(record.status)}
-                  </span>
+            {recentPayments.length > 0 ? (
+              recentPayments.map((record) => (
+                <div className="certificate-item" key={record.paymentRecordId}>
+                  <div className="certificate-top">
+                    <span className="chain-mini" aria-hidden="true">
+                      #
+                    </span>
+                    <span
+                      className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}
+                    >
+                      {paymentStatusText(record.status)}
+                    </span>
+                  </div>
+                  <p>{record.month}</p>
+                  <strong>{formatUsd(record.amountUsd)}</strong>
+                  <span className="tx-line">ref {record.txHash}</span>
                 </div>
-                <p>{record.month}</p>
-                <strong>{formatUsd(record.amountUsd)}</strong>
-                <span className="tx-line">ref {record.txHash}</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="panel-copy">No certificates yet. Record your first rent payment to mint one.</p>
+            )}
           </div>
         </article>
 
@@ -209,16 +213,22 @@ export default function DashboardOverviewPage() {
             </tr>
           </thead>
           <tbody>
-            {recentTransactions.map((tx) => (
-              <tr key={tx.eventId}>
-                <td>{txLabel(tx.eventType)}</td>
-                <td>{new Date(tx.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
-                <td>
-                  <span className={`status-tag ${txStatusTone(tx.status)}`}>{tx.status}</span>
-                </td>
-                <td className="mono">{tx.txHash}</td>
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((tx) => (
+                <tr key={tx.eventId}>
+                  <td>{txLabel(tx.eventType)}</td>
+                  <td>{new Date(tx.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                  <td>
+                    <span className={`status-tag ${txStatusTone(tx.status)}`}>{tx.status}</span>
+                  </td>
+                  <td className="mono">{tx.txHash}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4}>No transaction activity yet. Complete your first payment to see entries.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </section>

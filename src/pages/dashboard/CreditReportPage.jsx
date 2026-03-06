@@ -17,14 +17,6 @@ function scoreTier(score) {
   return "Building Credit";
 }
 
-function scoreTierClass(score) {
-  if (score >= 700) return "trusted";
-  if (score >= 600) return "established";
-  if (score >= 450) return "builder";
-  if (score >= 300) return "starter";
-  return "building";
-}
-
 export default function CreditReportPage() {
   const { rentScore, payments } = useOutletContext();
   const score = rentScore?.score || 150;
@@ -68,10 +60,9 @@ export default function CreditReportPage() {
           </p>
 
           <div className="report-score-row">
-            <div>
+            <div className="report-score-wrap">
               <p className="report-label">Current RentScore</p>
               <strong className="report-score">{score}</strong>
-              <span className={`tier-tag ${scoreTierClass(score)}`}>{scoreTier(score)}</span>
             </div>
             <div className="report-actions">
               <button className="btn btn-primary" type="button">
@@ -109,8 +100,8 @@ export default function CreditReportPage() {
         </article>
       </section>
 
-      <section className="dashboard-columns">
-        <article className="panel-card">
+      <section className="report-grid report-lower-grid">
+        <article className="panel-card report-metrics-card">
           <div className="panel-header">
             <h3>Reliability Snapshot</h3>
           </div>
@@ -124,7 +115,7 @@ export default function CreditReportPage() {
           </div>
         </article>
 
-        <article className="panel-card">
+        <article className="panel-card report-timeline-card">
           <div className="panel-header">
             <h3>Progress Timeline</h3>
           </div>

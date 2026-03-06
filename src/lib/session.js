@@ -1,5 +1,8 @@
 const SESSION_KEY = "rentledger_user";
 const DEFAULT_ACCOUNT_ID = import.meta.env.VITE_DEMO_ACCOUNT_ID || "acc_01HQP7S1A9";
+const DEMO_JUDGE_EMAIL = import.meta.env.VITE_DEMO_JUDGE_EMAIL || "judge@rentledger.demo";
+const DEMO_JUDGE_PASSWORD = import.meta.env.VITE_DEMO_JUDGE_PASSWORD || "rentledger-demo";
+const DEMO_JUDGE_NAME = import.meta.env.VITE_DEMO_JUDGE_NAME || "Judge Demo User";
 
 function normalizeWhitespace(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
@@ -55,4 +58,15 @@ export function clearSessionUser() {
   window.localStorage.removeItem(SESSION_KEY);
 }
 
-export { DEFAULT_ACCOUNT_ID };
+const DEMO_JUDGE_USER = createSessionUser({
+  fullName: DEMO_JUDGE_NAME,
+  email: DEMO_JUDGE_EMAIL,
+  accountId: DEFAULT_ACCOUNT_ID
+});
+
+export {
+  DEFAULT_ACCOUNT_ID,
+  DEMO_JUDGE_EMAIL,
+  DEMO_JUDGE_PASSWORD,
+  DEMO_JUDGE_USER
+};

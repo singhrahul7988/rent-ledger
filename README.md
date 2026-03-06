@@ -60,7 +60,9 @@ npm run test
 
 ## 2) End-to-end demo flow (frontend -> backend APIs)
 
-1. Open `/signin` and enter any valid email/password.
+1. Open `/signin` and use the judge demo account:
+   - email: `judge@rentledger.demo`
+   - password: `rentledger-demo`
 2. Go to **Pay Rent** and click **Record Payment**.
 3. Verify updates in:
    - Dashboard (score + payment certificate cards)
@@ -155,6 +157,7 @@ Vercel docs:
 5. Env vars:
    - `PORT=8080`
    - `BLOCKCHAIN_MODE=mock`
+   - `EXPLORER_BASE_URL=https://creditcoin-testnet.blockscout.com/tx/`
 
 Render docs:
 - https://render.com/docs/free
@@ -173,3 +176,4 @@ Render docs:
 
 - Backend blockchain mode defaults to `mock` for stable demo UX.
 - For judge proof, use the contract testnet deployment + `demo:flow` tx links.
+- Dashboard notifications surface key events (payment, loan, score and error alerts) for judge visibility.

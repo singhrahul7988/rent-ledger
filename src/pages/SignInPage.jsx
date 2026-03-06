@@ -1,15 +1,30 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
-import { saveSessionUser } from "../lib/session";
+import {
+  DEMO_JUDGE_EMAIL,
+  DEMO_JUDGE_PASSWORD,
+  DEMO_JUDGE_USER,
+  saveSessionUser
+} from "../lib/session";
 
 export default function SignInPage() {
   const navigate = useNavigate();
+  const [authError, setAuthError] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
-    saveSessionUser({ email });
+    const email = String(formData.get("email") || "").trim().toLowerCase();
+    const password = String(formData.get("password") || "");
+
+    if (email !== DEMO_JUDGE_EMAIL.toLowerCase() || password !== DEMO_JUDGE_PASSWORD) {
+      setAuthError("Use the judge demo credentials shown below.");
+      return;
+    }
+
+    setAuthError("");
+    saveSessionUser(DEMO_JUDGE_USER);
     navigate("/dashboard");
   };
 
@@ -42,7 +57,7 @@ export default function SignInPage() {
                 type="email"
                 name="email"
                 autoComplete="email"
-                placeholder="sarah.chen@example.com"
+                placeholder={DEMO_JUDGE_EMAIL}
                 required
               />
             </label>
@@ -53,7 +68,7 @@ export default function SignInPage() {
                 type="password"
                 name="password"
                 autoComplete="current-password"
-                placeholder="Enter your password"
+                placeholder="Enter judge demo password"
                 required
               />
             </label>
@@ -73,7 +88,19 @@ export default function SignInPage() {
             </button>
           </form>
 
-          <p className="auth-footnote">Demo mode: enter any valid email and password to continue.</p>
+          {authError ? <p className="action-error">{authError}</p> : null}
+          <div className="demo-credentials-card">
+            <p className="demo-credentials-title">Judge Demo Account</p>
+            <p>
+              Email: <code>{DEMO_JUDGE_EMAIL}</code>
+            </p>
+            <p>
+              Password: <code>{DEMO_JUDGE_PASSWORD}</code>
+            </p>
+          </div>
+          <p className="auth-footnote">
+            Use this single account during judging so all transactions are visible in one history.
+          </p>
         </section>
 
         <aside className="auth-side-card">

@@ -22,6 +22,12 @@ const tierTerms: Record<1 | 2 | 3 | 4, { minScore: number; maxAmountUsd: number;
   3: { minScore: 600, maxAmountUsd: 75000, apr: 12, tenorMonths: 6 },
   4: { minScore: 700, maxAmountUsd: 150000, apr: 10, tenorMonths: 6 }
 };
+const explorerBaseUrl = process.env.EXPLORER_BASE_URL || "https://creditcoin-testnet.blockscout.com/tx/";
+
+function toExplorerUrl(txHash: string) {
+  if (!txHash || txHash.includes("...")) return "";
+  return `${explorerBaseUrl}${txHash}`;
+}
 
 export function loansRouter(blockchainService: BlockchainService) {
   const router = Router();
@@ -99,7 +105,7 @@ export function loansRouter(blockchainService: BlockchainService) {
       status: "SUCCESS",
       timestamp: new Date().toISOString(),
       txHash: chain.txHash,
-      explorerUrl: `https://explorer.creditcoin.network/tx/${chain.txHash.replace("...", "")}`
+      explorerUrl: toExplorerUrl(chain.txHash)
     };
     transactions.unshift(tx);
 

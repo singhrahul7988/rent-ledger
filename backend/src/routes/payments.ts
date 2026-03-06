@@ -31,6 +31,12 @@ type PaymentIntent = {
 };
 
 const paymentIntents: PaymentIntent[] = [];
+const explorerBaseUrl = process.env.EXPLORER_BASE_URL || "https://creditcoin-testnet.blockscout.com/tx/";
+
+function toExplorerUrl(txHash: string) {
+  if (!txHash || txHash.includes("...")) return "";
+  return `${explorerBaseUrl}${txHash}`;
+}
 
 export function paymentsRouter(blockchainService: BlockchainService) {
   const router = Router();
@@ -118,7 +124,7 @@ export function paymentsRouter(blockchainService: BlockchainService) {
       status: "SUCCESS",
       timestamp: confirmedAt,
       txHash: parsed.data.txHash || onchain.txHash,
-      explorerUrl: `https://explorer.creditcoin.network/tx/${(parsed.data.txHash || onchain.txHash).replace("...", "")}`
+      explorerUrl: toExplorerUrl(parsed.data.txHash || onchain.txHash)
     };
     transactions.unshift(tx);
 

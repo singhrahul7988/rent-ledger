@@ -160,21 +160,25 @@ export default function PayRentPage() {
           </Link>
         </div>
         <div className="certificate-grid">
-          {payments.slice(0, 4).map((record) => (
-            <div className="certificate-item" key={record.paymentRecordId}>
-              <div className="certificate-top">
-                <span className="chain-mini" aria-hidden="true">
-                  #
-                </span>
-                <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
-                  {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
-                </span>
+          {payments.length > 0 ? (
+            payments.slice(0, 4).map((record) => (
+              <div className="certificate-item" key={record.paymentRecordId}>
+                <div className="certificate-top">
+                  <span className="chain-mini" aria-hidden="true">
+                    #
+                  </span>
+                  <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
+                    {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
+                  </span>
+                </div>
+                <p>{record.month}</p>
+                <strong>{formatUsd(record.amountUsd)}</strong>
+                <span className="tx-line">ref {record.txHash}</span>
               </div>
-              <p>{record.month}</p>
-              <strong>{formatUsd(record.amountUsd)}</strong>
-              <span className="tx-line">ref {record.txHash}</span>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="panel-copy">No certificates yet. Complete your first rent payment above.</p>
+          )}
         </div>
       </section>
     </>
