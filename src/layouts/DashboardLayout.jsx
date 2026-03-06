@@ -161,8 +161,7 @@ export default function DashboardLayout() {
             <span>My Account: 0x8f21A9...B113</span>
           </div>
           <p className="creditcoin-note">
-            <span className="ctc-icon">CTC</span>
-            Powered by Creditcoin
+            Powered by <span className="creditcoin-brand">credit coin</span>
           </p>
         </div>
       </aside>

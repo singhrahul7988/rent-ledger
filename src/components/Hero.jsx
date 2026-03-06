@@ -1,19 +1,5 @@
 import { Link } from "react-router-dom";
-
-function ChainBadgeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M8 8.5h8M8 12h8M8 15.5h8M5 6.5l3-3h8l3 3v11l-3 3H8l-3-3z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import CreditcoinIcon from "./CreditcoinIcon";
 
 export default function Hero() {
   return (
@@ -23,7 +9,7 @@ export default function Hero() {
       <div className="container hero-grid">
         <div className="hero-left">
           <div className="hero-eyebrow">
-            <ChainBadgeIcon />
+            <CreditcoinIcon title="" />
             Built on Creditcoin Blockchain
           </div>
 
@@ -41,7 +27,7 @@ export default function Hero() {
           </p>
 
           <div className="hero-cta">
-            <Link to="/dashboard" className="btn btn-primary btn-link">
+            <Link to="/signup" className="btn btn-primary btn-link">
               Start Building Credit Free
             </Link>
             <a href="#how-it-works" className="btn btn-outline btn-link">

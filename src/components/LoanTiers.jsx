@@ -44,7 +44,7 @@ const TIERS = [
 
 export default function LoanTiers() {
   return (
-    <section className="loan-tiers" id="pricing">
+    <section className="loan-tiers" id="loan-unlocks">
       <div className="container">
         <h2>What you can unlock</h2>
         <div className="tier-grid">

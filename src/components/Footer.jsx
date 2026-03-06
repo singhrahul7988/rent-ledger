@@ -1,4 +1,6 @@
 import Brand from "./Brand";
+import CreditcoinIcon from "./CreditcoinIcon";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -13,11 +15,11 @@ export default function Footer() {
           <a href="#how-it-works">How It Works</a>
           <a href="#rentscore">RentScore</a>
           <a href="#for-landlords">For Landlords</a>
-          <a href="#pricing">Pricing</a>
+          <Link to="/pricing">Pricing</Link>
         </nav>
 
         <div className="creditcoin-badge">
-          <span className="ctc-icon">CTC</span>
+          <CreditcoinIcon title="" />
           Built on Creditcoin
         </div>
       </div>

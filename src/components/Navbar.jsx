@@ -11,14 +11,14 @@ export default function Navbar({ scrolled }) {
           <a href="#how-it-works">How It Works</a>
           <a href="#rentscore">RentScore</a>
           <a href="#for-landlords">For Landlords</a>
-          <a href="#pricing">Pricing</a>
+          <Link to="/pricing">Pricing</Link>
         </nav>
 
         <div className="nav-actions">
-          <Link to="/dashboard" className="btn btn-ghost btn-link">
+          <Link to="/signin" className="btn btn-ghost btn-link">
             Sign In
           </Link>
-          <Link to="/dashboard" className="btn btn-primary btn-link">
+          <Link to="/signup" className="btn btn-primary btn-link">
             Start Building Credit
           </Link>
         </div>
