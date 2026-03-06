@@ -27,5 +27,20 @@ npm run test
 1. Copy `.env.example` to `.env` and fill values.
 2. Run:
 ```bash
-npx hardhat run scripts/deploy.js --network ctcTestnet
+npm run deploy:testnet
 ```
+
+## Run a live demo flow on testnet
+After deployment, set contract addresses in `.env`:
+- `LEASE_REGISTRY_ADDRESS`
+- `ESCROW_CONTRACT_ADDRESS`
+
+Then run:
+```bash
+npm run demo:flow
+```
+
+This script:
+1. registers a demo lease
+2. deposits rent through escrow
+3. prints explorer links for both transactions

@@ -1,4 +1,5 @@
-import { transactions } from "../../data/dashboardData";
+import { useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 function statusTone(status) {
   if (status === "SUCCESS") return "active";
@@ -6,23 +7,52 @@ function statusTone(status) {
   return "locked";
 }
 
+function eventLabel(eventType) {
+  return eventType
+    .toLowerCase()
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
 export default function TransactionsPage() {
+  const { transactions } = useOutletContext();
+  const [eventFilter, setEventFilter] = useState("all");
+
+  const filteredTransactions = useMemo(
+    () =>
+      transactions.filter((tx) => {
+        if (eventFilter === "all") return true;
+        if (eventFilter === "payments") return tx.eventType.includes("PAYMENT");
+        if (eventFilter === "score") return tx.eventType.includes("SCORE");
+        if (eventFilter === "loans") return tx.eventType.includes("LOAN");
+        return true;
+      }),
+    [transactions, eventFilter]
+  );
+
+  const successful = transactions.filter((tx) => tx.status === "SUCCESS").length;
+  const pending = transactions.filter((tx) => tx.status === "PENDING").length;
+
+  const copyHash = async (hash) => {
+    try {
+      await navigator.clipboard.writeText(hash);
+    } catch (_error) {
+      // noop
+    }
+  };
+
   return (
     <>
       <section className="table-card">
         <div className="panel-header">
           <h3>Transactions Ledger</h3>
           <div className="table-actions">
-            <select defaultValue="all">
+            <select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)}>
               <option value="all">All Event Types</option>
               <option value="payments">Payments</option>
               <option value="score">Score Updates</option>
               <option value="loans">Loans</option>
-            </select>
-            <select defaultValue="last30">
-              <option value="last7">Last 7 days</option>
-              <option value="last30">Last 30 days</option>
-              <option value="last90">Last 90 days</option>
             </select>
             <button className="btn btn-secondary small" type="button">
               Export CSV
@@ -41,32 +71,35 @@ export default function TransactionsPage() {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((tx) => (
-              <tr key={`${tx.type}-${tx.ref}`}>
-                <td>{tx.type}</td>
-                <td>{tx.date}</td>
-                <td>{tx.time}</td>
-                <td>
-                  <span className={`status-tag ${statusTone(tx.status)}`}>{tx.status}</span>
-                </td>
-                <td className="mono">{tx.ref}</td>
-                <td>
-                  <div className="row-actions">
-                    <button className="btn btn-ghost small" type="button">
-                      Copy
-                    </button>
-                    <a
-                      className="btn btn-ghost small btn-link"
-                      href={tx.explorerUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Explorer
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {filteredTransactions.map((tx) => {
+              const txDate = new Date(tx.timestamp);
+              return (
+                <tr key={tx.eventId}>
+                  <td>{eventLabel(tx.eventType)}</td>
+                  <td>{txDate.toLocaleDateString("en-US")}</td>
+                  <td>{txDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</td>
+                  <td>
+                    <span className={`status-tag ${statusTone(tx.status)}`}>{tx.status}</span>
+                  </td>
+                  <td className="mono">{tx.txHash}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="btn btn-ghost small" type="button" onClick={() => copyHash(tx.txHash)}>
+                        Copy
+                      </button>
+                      <a
+                        className="btn btn-ghost small btn-link"
+                        href={tx.explorerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Explorer
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
@@ -78,16 +111,16 @@ export default function TransactionsPage() {
           </div>
           <div className="reliability-grid">
             <div className="reliability-card">
-              <p>Total Events (30d)</p>
-              <strong>47</strong>
+              <p>Total Events</p>
+              <strong>{transactions.length}</strong>
             </div>
             <div className="reliability-card">
               <p>Successful Confirmations</p>
-              <strong>44</strong>
+              <strong>{successful}</strong>
             </div>
             <div className="reliability-card">
               <p>Pending Confirmations</p>
-              <strong>3</strong>
+              <strong>{pending}</strong>
             </div>
             <div className="reliability-card">
               <p>Average Confirmation Time</p>

@@ -1,18 +1,72 @@
-import { Link } from "react-router-dom";
-import { activeLease, paymentCertificates } from "../../data/dashboardData";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useOutletContext } from "react-router-dom";
 
 function formatUsd(value) {
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return Number(value || 0).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD"
+  });
+}
+
+function nextDueDateLabel(dueDay) {
+  const now = new Date();
+  const due = new Date(now.getFullYear(), now.getMonth(), dueDay || 5);
+  if (due < now) {
+    due.setMonth(due.getMonth() + 1);
+  }
+  return due.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export default function PayRentPage() {
-  const total = activeLease.monthlyRent + activeLease.processingFee;
+  const { leases, payments, paying, submitRentPayment } = useOutletContext();
+  const [selectedLeaseId, setSelectedLeaseId] = useState("");
+  const [notes, setNotes] = useState("Monthly rent payment.");
+  const [resultMessage, setResultMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (leases.length > 0 && !selectedLeaseId) {
+      setSelectedLeaseId(leases[0].leaseId);
+    }
+  }, [leases, selectedLeaseId]);
+
+  const selectedLease = useMemo(
+    () => leases.find((lease) => lease.leaseId === selectedLeaseId) || null,
+    [leases, selectedLeaseId]
+  );
+
+  const processingFee = 4.5;
+  const total = (selectedLease?.monthlyRentUsd || 0) + processingFee;
+  const dueDate = selectedLease ? nextDueDateLabel(selectedLease.dueDay) : "--";
+
+  const handleSubmit = async () => {
+    if (!selectedLease) return;
+    setError("");
+    setResultMessage("");
+
+    try {
+      const dueDateIso = new Date().toISOString().slice(0, 10);
+      const result = await submitRentPayment({
+        leaseId: selectedLease.leaseId,
+        amountUsd: selectedLease.monthlyRentUsd,
+        processingFeeUsd: processingFee,
+        dueDate: dueDateIso,
+        notes
+      });
+
+      setResultMessage(
+        `Payment recorded. Certificate ${result.certificateTokenId} issued. New score: ${result.newScore}.`
+      );
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to record payment.");
+    }
+  };
 
   return (
     <>
       <section className="pay-banner">
         <p>
-          Next payment due on <strong>{activeLease.dueDate}</strong>. Complete payment
+          Next payment due on <strong>{dueDate}</strong>. Complete payment
           through the automated payment system to keep your streak active.
         </p>
       </section>
@@ -26,26 +80,31 @@ export default function PayRentPage() {
           <div className="form-grid">
             <label>
               Lease
-              <select defaultValue={activeLease.id}>
-                <option value={activeLease.id}>{activeLease.propertyLabel}</option>
+              <select value={selectedLeaseId} onChange={(event) => setSelectedLeaseId(event.target.value)}>
+                {leases.map((lease) => (
+                  <option key={lease.leaseId} value={lease.leaseId}>
+                    {lease.leaseId} - Due day {lease.dueDay}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
               Landlord
-              <input type="text" defaultValue={activeLease.landlord} readOnly />
+              <input type="text" defaultValue={selectedLease?.landlordName || "--"} readOnly />
             </label>
             <label>
               Rent Amount (USD)
-              <input type="text" defaultValue={formatUsd(activeLease.monthlyRent)} readOnly />
+              <input type="text" value={formatUsd(selectedLease?.monthlyRentUsd || 0)} readOnly />
             </label>
             <label>
               Processing Fee (USD)
-              <input type="text" defaultValue={formatUsd(activeLease.processingFee)} readOnly />
+              <input type="text" value={formatUsd(processingFee)} readOnly />
             </label>
             <label className="full">
               Notes for this payment
               <textarea
-                defaultValue="March payment for Unit 12B."
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
                 rows={4}
                 aria-label="Payment notes"
               ></textarea>
@@ -53,13 +112,15 @@ export default function PayRentPage() {
           </div>
 
           <div className="hero-actions">
-            <button className="btn btn-primary" type="button">
-              Record Payment {formatUsd(total)}
+            <button className="btn btn-primary" type="button" disabled={paying || !selectedLease} onClick={handleSubmit}>
+              {paying ? "Recording..." : `Record Payment ${formatUsd(total)}`}
             </button>
-            <button className="btn btn-secondary" type="button">
-              Save for Later
+            <button className="btn btn-secondary" type="button" onClick={() => setNotes("Monthly rent payment.")}>
+              Reset Notes
             </button>
           </div>
+          {resultMessage ? <p className="action-success">{resultMessage}</p> : null}
+          {error ? <p className="action-error">{error}</p> : null}
         </article>
 
         <aside className="panel-card pay-summary-card">
@@ -67,11 +128,11 @@ export default function PayRentPage() {
           <div className="summary-rows">
             <p>
               <span>Monthly Rent</span>
-              <strong>{formatUsd(activeLease.monthlyRent)}</strong>
+              <strong>{formatUsd(selectedLease?.monthlyRentUsd || 0)}</strong>
             </p>
             <p>
               <span>Processing Fee</span>
-              <strong>{formatUsd(activeLease.processingFee)}</strong>
+              <strong>{formatUsd(processingFee)}</strong>
             </p>
             <p className="total">
               <span>Total</span>
@@ -99,19 +160,19 @@ export default function PayRentPage() {
           </Link>
         </div>
         <div className="certificate-grid">
-          {paymentCertificates.slice(0, 4).map((record) => (
-            <div className="certificate-item" key={record.certificateId}>
+          {payments.slice(0, 4).map((record) => (
+            <div className="certificate-item" key={record.paymentRecordId}>
               <div className="certificate-top">
                 <span className="chain-mini" aria-hidden="true">
                   #
                 </span>
-                <span className={`status-tag ${record.status === "ON TIME" ? "on-time" : "late"}`}>
-                  {record.status}
+                <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
+                  {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
                 </span>
               </div>
               <p>{record.month}</p>
-              <strong>{record.amount}</strong>
-              <span className="tx-line">ref {record.hash}</span>
+              <strong>{formatUsd(record.amountUsd)}</strong>
+              <span className="tx-line">ref {record.txHash}</span>
             </div>
           ))}
         </div>

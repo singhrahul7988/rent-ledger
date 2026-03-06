@@ -27,11 +27,13 @@ Copy `.env.example` to `.env`.
 `/api/v1`
 
 ## Implemented routes
+- `GET /leases/:accountId`
 - `POST /leases`
 - `POST /payments/initiate`
 - `POST /payments/webhook/mock`
 - `GET /payments/:accountId`
 - `GET /rentscore/:accountId`
+- `GET /loans/:accountId`
 - `POST /loans/eligibility`
 - `POST /loans/request`
 - `GET /transactions/:accountId`

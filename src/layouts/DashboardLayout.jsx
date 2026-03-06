@@ -1,5 +1,17 @@
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Brand from "../components/Brand";
+import {
+  confirmPaymentWebhook,
+  getLeases,
+  getLoanEligibility,
+  getLoans,
+  getPayments,
+  getRentScore,
+  getTransactions,
+  initiatePayment,
+  requestLoan,
+} from "../lib/apiClient";
 
 function Dot({ color = "var(--color-green)" }) {
   return <span className="dot" style={{ background: color }} aria-hidden="true"></span>;
@@ -106,6 +118,14 @@ const pageTitleByPath = {
   "/dashboard/help": "Help"
 };
 
+const DEMO_ACCOUNT_ID = import.meta.env.VITE_DEMO_ACCOUNT_ID || "acc_01HQP7S1A9";
+
+function formatAccountLabel(accountId) {
+  if (!accountId) return "not connected";
+  if (accountId.length <= 14) return accountId;
+  return `${accountId.slice(0, 8)}...${accountId.slice(-4)}`;
+}
+
 function SidebarItem({ item }) {
   if (!item.path) {
     return (
@@ -131,6 +151,117 @@ function SidebarItem({ item }) {
 export default function DashboardLayout() {
   const location = useLocation();
   const topbarTitle = pageTitleByPath[location.pathname] || "Dashboard";
+  const [dashboardData, setDashboardData] = useState({
+    loading: true,
+    error: "",
+    leases: [],
+    payments: [],
+    transactions: [],
+    loans: [],
+    rentScore: null
+  });
+  const [actionState, setActionState] = useState({
+    paying: false,
+    requestingLoan: false
+  });
+
+  const refreshDashboardData = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setDashboardData((prev) => ({ ...prev, loading: true, error: "" }));
+    }
+
+    try {
+      const [leaseRes, paymentRes, rentScoreRes, loanRes, transactionRes] = await Promise.all([
+        getLeases(DEMO_ACCOUNT_ID),
+        getPayments(DEMO_ACCOUNT_ID),
+        getRentScore(DEMO_ACCOUNT_ID),
+        getLoans(DEMO_ACCOUNT_ID),
+        getTransactions(DEMO_ACCOUNT_ID)
+      ]);
+
+      setDashboardData({
+        loading: false,
+        error: "",
+        leases: leaseRes.items || [],
+        payments: paymentRes.items || [],
+        transactions: transactionRes.items || [],
+        loans: loanRes.items || [],
+        rentScore: rentScoreRes
+      });
+    } catch (error) {
+      setDashboardData((prev) => ({
+        ...prev,
+        loading: false,
+        error: error instanceof Error ? error.message : "Unable to load dashboard data."
+      }));
+    }
+  };
+
+  useEffect(() => {
+    refreshDashboardData();
+  }, []);
+
+  const submitRentPayment = async ({
+    leaseId,
+    amountUsd,
+    processingFeeUsd,
+    dueDate
+  }) => {
+    setActionState((prev) => ({ ...prev, paying: true }));
+    try {
+      const initiated = await initiatePayment({
+        leaseId,
+        payerAccountId: DEMO_ACCOUNT_ID,
+        amountUsd,
+        processingFeeUsd,
+        dueDate
+      });
+
+      const confirmation = await confirmPaymentWebhook({
+        paymentIntentId: initiated.paymentIntentId,
+        networkStatus: "CONFIRMED"
+      });
+
+      await refreshDashboardData({ silent: true });
+      return confirmation;
+    } finally {
+      setActionState((prev) => ({ ...prev, paying: false }));
+    }
+  };
+
+  const requestLoanAction = async ({ tier, amountUsd }) => {
+    setActionState((prev) => ({ ...prev, requestingLoan: true }));
+    try {
+      const response = await requestLoan({
+        accountId: DEMO_ACCOUNT_ID,
+        tier,
+        amountUsd
+      });
+      await refreshDashboardData({ silent: true });
+      return response;
+    } finally {
+      setActionState((prev) => ({ ...prev, requestingLoan: false }));
+    }
+  };
+
+  const checkLoanEligibility = (requestedTier) =>
+    getLoanEligibility({
+      accountId: DEMO_ACCOUNT_ID,
+      requestedTier
+    });
+
+  const outletContext = useMemo(
+    () => ({
+      accountId: DEMO_ACCOUNT_ID,
+      ...dashboardData,
+      ...actionState,
+      refreshDashboardData,
+      submitRentPayment,
+      requestLoanAction,
+      checkLoanEligibility
+    }),
+    [dashboardData, actionState]
+  );
 
   return (
     <div className="dashboard-shell">
@@ -158,7 +289,7 @@ export default function DashboardLayout() {
         <div className="sidebar-bottom">
           <div className="wallet-indicator">
             <Dot />
-            <span>My Account: 0x8f21A9...B113</span>
+            <span>My Account: {formatAccountLabel(DEMO_ACCOUNT_ID)}</span>
           </div>
           <p className="creditcoin-note">
             Powered by <span className="creditcoin-brand">credit coin</span>
@@ -192,7 +323,15 @@ export default function DashboardLayout() {
         </header>
 
         <main className="dashboard-content">
-          <Outlet />
+          {dashboardData.error ? (
+            <div className="data-alert">
+              <p>{dashboardData.error}</p>
+              <button className="btn btn-secondary small" type="button" onClick={() => refreshDashboardData()}>
+                Retry
+              </button>
+            </div>
+          ) : null}
+          <Outlet context={outletContext} />
         </main>
       </div>
     </div>

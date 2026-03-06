@@ -26,6 +26,12 @@ const tierTerms: Record<1 | 2 | 3 | 4, { minScore: number; maxAmountUsd: number;
 export function loansRouter(blockchainService: BlockchainService) {
   const router = Router();
 
+  router.get("/:accountId", (req, res) => {
+    const { accountId } = req.params;
+    const items = loans.filter((loan) => loan.accountId === accountId);
+    return res.status(200).json({ items, total: items.length });
+  });
+
   router.post("/eligibility", (req, res) => {
     const parsed = eligibilitySchema.safeParse(req.body);
     if (!parsed.success) {

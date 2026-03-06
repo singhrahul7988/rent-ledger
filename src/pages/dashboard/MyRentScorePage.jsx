@@ -1,36 +1,99 @@
-const scoreFactors = [
-  { name: "Payment Count", detail: "+30 per payment", progress: 84, points: "+360" },
-  {
-    name: "Consistency Bonus",
-    detail: "+50 for 6 months streak",
-    progress: 70,
-    points: "+50"
-  },
-  {
-    name: "Rental Amount Tier",
-    detail: "+50 for $1,000+/month",
-    progress: 76,
-    points: "+50"
-  },
-  { name: "Tenure Bonus", detail: "+50 for 12+ months", progress: 58, points: "+50" },
-  { name: "Late Payment Penalty", detail: "-15 per late", progress: 18, points: "-15", penalty: true }
-];
+import { useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 
-const history = [
-  { month: "Apr 2025", score: 150 },
-  { month: "Jul 2025", score: 300 },
-  { month: "Oct 2025", score: 442 },
-  { month: "Jan 2026", score: 487 },
-  { month: "Mar 2026", score: 612 }
-];
+function tierLabel(score) {
+  if (score >= 700) return "Credit Trusted";
+  if (score >= 600) return "Credit Established";
+  if (score >= 450) return "Credit Builder";
+  if (score >= 300) return "Credit Starter";
+  return "Building Credit";
+}
 
-const milestones = [
-  "Keep 3 more on-time payments to add 90 points.",
-  "Maintain your current lease until June 2026 for an additional tenure bonus.",
-  "Avoid late payments to protect your current tier."
-];
+function tierClass(score) {
+  if (score >= 700) return "trusted";
+  if (score >= 600) return "established";
+  if (score >= 450) return "builder";
+  if (score >= 300) return "starter";
+  return "building";
+}
+
+function buildTrend(payments, finalScore) {
+  const sorted = [...payments].sort(
+    (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
+  );
+  if (sorted.length === 0) {
+    return [
+      { month: "Start", score: 150 },
+      { month: "Current", score: finalScore }
+    ];
+  }
+
+  let runningScore = 150;
+  return sorted.slice(-5).map((payment) => {
+    runningScore += payment.status === "ON_TIME" ? 30 : -15;
+    runningScore = Math.max(0, Math.min(finalScore, runningScore));
+    return {
+      month: new Date(payment.confirmedAt).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric"
+      }),
+      score: runningScore
+    };
+  });
+}
 
 export default function MyRentScorePage() {
+  const { rentScore, payments } = useOutletContext();
+  const score = rentScore?.score || 150;
+  const gaugeProgress = Number(((score / 850) * 75).toFixed(2));
+  const trend = useMemo(() => buildTrend(payments, score), [payments, score]);
+  const factors = rentScore?.factors || {
+    onTimePayments: 0,
+    latePayments: 0,
+    tenureMonths: 0,
+    avgRentUsd: 0
+  };
+
+  const factorItems = [
+    {
+      name: "Payment Count",
+      detail: "+30 per payment",
+      progress: Math.min(100, Math.round((factors.onTimePayments * 30 * 100) / 300)),
+      points: `+${Math.min(factors.onTimePayments * 30, 300)}`
+    },
+    {
+      name: "Consistency Bonus",
+      detail: "+50 for 6 months streak",
+      progress: Math.min(100, Math.round((factors.onTimePayments / 6) * 100)),
+      points: factors.onTimePayments >= 6 ? "+50" : "+0"
+    },
+    {
+      name: "Rental Amount Tier",
+      detail: "+50 for $1,000+/month",
+      progress: factors.avgRentUsd >= 1000 ? 100 : factors.avgRentUsd >= 500 ? 65 : 35,
+      points: factors.avgRentUsd >= 1000 ? "+50" : factors.avgRentUsd >= 500 ? "+30" : "+10"
+    },
+    {
+      name: "Tenure Bonus",
+      detail: "+50 for 12+ months",
+      progress: Math.min(100, Math.round((factors.tenureMonths / 12) * 100)),
+      points: factors.tenureMonths >= 12 ? "+50" : factors.tenureMonths >= 6 ? "+25" : "+0"
+    },
+    {
+      name: "Late Payment Penalty",
+      detail: "-15 per late",
+      progress: Math.min(100, factors.latePayments * 15),
+      points: `-${factors.latePayments * 15}`,
+      penalty: true
+    }
+  ];
+
+  const milestoneItems = [
+    `Keep ${Math.max(1, Math.ceil((rentScore?.pointsToNextTier || 0) / 30))} more on-time payments to reach the next tier.`,
+    `Current average rent tracked: $${Math.round(factors.avgRentUsd || 0)}.`,
+    "Avoid late payments to protect your current tier."
+  ];
+
   return (
     <>
       <section className="rentscore-grid">
@@ -52,19 +115,19 @@ export default function MyRentScorePage() {
                   r="86"
                   className="gauge-progress dashboard-gauge-progress"
                   pathLength="100"
-                  style={{ "--score-progress": 53.99 }}
+                  style={{ "--score-progress": gaugeProgress }}
                 />
               </svg>
               <div className="gauge-center">
-                <strong>612</strong>
+                <strong>{score}</strong>
                 <span>RentScore</span>
               </div>
             </div>
             <div className="rentscore-summary">
-              <span className="tier-tag established">Credit Established</span>
+              <span className={`tier-tag ${tierClass(score)}`}>{tierLabel(score)}</span>
               <p>
-                You are 88 points away from <strong>Credit Trusted</strong>. Your
-                profile now qualifies for Tier 3 loan offers.
+                You are {rentScore?.pointsToNextTier || 0} points away from the next
+                tier. Keep monthly rent on time to accelerate eligibility.
               </p>
               <div className="hero-actions">
                 <button className="btn btn-primary" type="button">
@@ -80,11 +143,11 @@ export default function MyRentScorePage() {
 
         <article className="panel-card">
           <div className="panel-header">
-            <h3>Score Trend (Last 12 Months)</h3>
+            <h3>Score Trend (Recent Records)</h3>
           </div>
           <div className="trend-chart">
-            {history.map((point) => (
-              <div className="trend-col" key={point.month}>
+            {trend.map((point) => (
+              <div className="trend-col" key={`${point.month}-${point.score}`}>
                 <div className="trend-bar-wrap">
                   <i
                     className="trend-bar"
@@ -105,7 +168,7 @@ export default function MyRentScorePage() {
             <h3>Score Factors</h3>
           </div>
           <ul className="factor-breakdown-list">
-            {scoreFactors.map((factor) => (
+            {factorItems.map((factor) => (
               <li key={factor.name}>
                 <div className="factor-head">
                   <div>
@@ -127,7 +190,7 @@ export default function MyRentScorePage() {
             <h3>Recommended Next Steps</h3>
           </div>
           <ul className="milestone-list">
-            {milestones.map((item) => (
+            {milestoneItems.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>

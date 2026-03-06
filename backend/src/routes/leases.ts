@@ -15,6 +15,12 @@ const createLeaseSchema = z.object({
 export function leasesRouter() {
   const router = Router();
 
+  router.get("/:accountId", (req, res) => {
+    const { accountId } = req.params;
+    const items = leases.filter((lease) => lease.tenantAccountId === accountId);
+    return res.status(200).json({ items, total: items.length });
+  });
+
   router.post("/", (req, res) => {
     const parsed = createLeaseSchema.safeParse(req.body);
     if (!parsed.success) {

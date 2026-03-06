@@ -1,17 +1,60 @@
-const reliabilityMetrics = [
-  { label: "On-Time Payment Ratio", value: "93%" },
-  { label: "Average Monthly Rent", value: "$1,833" },
-  { label: "Longest On-Time Streak", value: "5 months" },
-  { label: "Verified Payment Records", value: "14" }
-];
+import { useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
 
-const reportTimeline = [
-  { title: "First Verified Payment", value: "April 2025" },
-  { title: "Reached Credit Builder", value: "October 2025" },
-  { title: "Reached Credit Established", value: "March 2026" }
-];
+function formatUsd(value) {
+  return Number(value || 0).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  });
+}
+
+function scoreTier(score) {
+  if (score >= 700) return "Credit Trusted";
+  if (score >= 600) return "Credit Established";
+  if (score >= 450) return "Credit Builder";
+  if (score >= 300) return "Credit Starter";
+  return "Building Credit";
+}
+
+function scoreTierClass(score) {
+  if (score >= 700) return "trusted";
+  if (score >= 600) return "established";
+  if (score >= 450) return "builder";
+  if (score >= 300) return "starter";
+  return "building";
+}
 
 export default function CreditReportPage() {
+  const { rentScore, payments } = useOutletContext();
+  const score = rentScore?.score || 150;
+  const onTimeCount = payments.filter((record) => record.status === "ON_TIME").length;
+  const onTimeRatio = payments.length ? Math.round((onTimeCount / payments.length) * 100) : 0;
+  const avgRent = payments.length
+    ? Math.round(payments.reduce((sum, record) => sum + record.amountUsd, 0) / payments.length)
+    : 0;
+
+  const timeline = useMemo(() => {
+    if (payments.length === 0) return [];
+    const sorted = [...payments].sort(
+      (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
+    );
+    const first = sorted[0];
+    const recent = sorted[sorted.length - 1];
+    return [
+      { title: "First Verified Payment", value: first.month },
+      { title: "Most Recent Certificate", value: recent.month },
+      { title: "Current Tier", value: scoreTier(score) }
+    ];
+  }, [payments, score]);
+
+  const reliabilityMetrics = [
+    { label: "On-Time Payment Ratio", value: `${onTimeRatio}%` },
+    { label: "Average Monthly Rent", value: formatUsd(avgRent) },
+    { label: "Verified Payment Records", value: String(payments.length) },
+    { label: "Current RentScore", value: String(score) }
+  ];
+
   return (
     <>
       <section className="report-grid">
@@ -27,8 +70,8 @@ export default function CreditReportPage() {
           <div className="report-score-row">
             <div>
               <p className="report-label">Current RentScore</p>
-              <strong className="report-score">612</strong>
-              <span className="tier-tag established">Credit Established</span>
+              <strong className="report-score">{score}</strong>
+              <span className={`tier-tag ${scoreTierClass(score)}`}>{scoreTier(score)}</span>
             </div>
             <div className="report-actions">
               <button className="btn btn-primary" type="button">
@@ -86,7 +129,7 @@ export default function CreditReportPage() {
             <h3>Progress Timeline</h3>
           </div>
           <ul className="timeline-list">
-            {reportTimeline.map((step) => (
+            {timeline.map((step) => (
               <li key={step.title}>
                 <span className="timeline-dot"></span>
                 <div>

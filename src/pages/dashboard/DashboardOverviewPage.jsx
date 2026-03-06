@@ -1,23 +1,77 @@
-import { Link } from "react-router-dom";
-import { paymentCertificates, transactions } from "../../data/dashboardData";
+import { Link, useOutletContext } from "react-router-dom";
+
+function formatUsd(value) {
+  return Number(value || 0).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  });
+}
+
+function scoreToTier(score) {
+  if (score >= 700) return { label: "Credit Trusted", css: "trusted" };
+  if (score >= 600) return { label: "Credit Established", css: "established" };
+  if (score >= 450) return { label: "Credit Builder", css: "builder" };
+  if (score >= 300) return { label: "Credit Starter", css: "starter" };
+  return { label: "Building Credit", css: "building" };
+}
+
+function scoreToLoanTier(score) {
+  if (score >= 700) return { tier: "Tier 4", max: "$150,000", apr: "10%" };
+  if (score >= 600) return { tier: "Tier 3", max: "$75,000", apr: "12%" };
+  if (score >= 450) return { tier: "Tier 2", max: "$30,000", apr: "15%" };
+  if (score >= 300) return { tier: "Tier 1", max: "$10,000", apr: "18%" };
+  return { tier: "Locked", max: "$0", apr: "-" };
+}
+
+function paymentStatusText(status) {
+  return status === "ON_TIME" ? "ON TIME" : "LATE";
+}
+
+function txStatusTone(status) {
+  if (status === "SUCCESS") return "active";
+  if (status === "PENDING") return "eligible";
+  return "locked";
+}
+
+function txLabel(eventType) {
+  return eventType
+    .toLowerCase()
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
 
 export default function DashboardOverviewPage() {
+  const { loading, rentScore, payments, transactions } = useOutletContext();
+
+  const score = rentScore?.score || 150;
+  const tier = scoreToTier(score);
+  const gaugeProgress = Number(((score / 850) * 75).toFixed(2));
+  const onTimePayments = payments.filter((payment) => payment.status === "ON_TIME").length;
+  const totalRentUsd = payments.reduce((sum, payment) => sum + payment.amountUsd, 0);
+  const loanTier = scoreToLoanTier(score);
+
+  const recentPayments = payments.slice(0, 4);
+  const recentTransactions = transactions.slice(0, 6);
+
   return (
     <>
       <section className="dashboard-hero-card">
         <div className="dashboard-hero-left">
           <h2>Your RentScore</h2>
           <p>
-            You moved into Credit Established after your latest on-time payment.
-            Keep your streak to unlock Tier 4.
+            {loading
+              ? "Loading your latest payment and score activity..."
+              : `Current score: ${score}. Keep on-time payments flowing to move into the next tier faster.`}
           </p>
           <div className="hero-actions">
             <Link to="/dashboard/pay-rent" className="btn btn-primary btn-link">
               Pay Rent
             </Link>
-            <button className="btn btn-secondary" type="button">
+            <Link to="/dashboard/credit-report" className="btn btn-secondary btn-link">
               View Credit Report
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -37,33 +91,35 @@ export default function DashboardOverviewPage() {
                 r="86"
                 className="gauge-progress dashboard-gauge-progress"
                 pathLength="100"
-                style={{ "--score-progress": 53.99 }}
+                style={{ "--score-progress": gaugeProgress }}
               />
             </svg>
             <div className="gauge-center">
-              <strong>612</strong>
+              <strong>{score}</strong>
               <span>RentScore</span>
             </div>
           </div>
-          <span className="tier-tag established">Credit Established</span>
+          <span className={`tier-tag ${tier.css}`}>{tier.label}</span>
         </div>
       </section>
 
       <section className="dashboard-stats">
         <article className="metric-card">
           <p>On-Time Payments</p>
-          <strong>14</strong>
-          <span className="metric-trend positive">+2 this quarter</span>
+          <strong>{onTimePayments}</strong>
+          <span className="metric-trend positive">{payments.length} total payments</span>
         </article>
         <article className="metric-card">
           <p>Total Rent Recorded</p>
-          <strong>$24,700</strong>
-          <span className="metric-trend neutral">Across 13 months</span>
+          <strong>{formatUsd(totalRentUsd)}</strong>
+          <span className="metric-trend neutral">Across {payments.length || 0} records</span>
         </article>
         <article className="metric-card">
           <p>Loan Eligibility</p>
-          <strong>Tier 3</strong>
-          <span className="metric-trend positive">Up to $75,000 at 12% APR</span>
+          <strong>{loanTier.tier}</strong>
+          <span className="metric-trend positive">
+            {loanTier.max} at {loanTier.apr} APR
+          </span>
         </article>
       </section>
 
@@ -77,19 +133,21 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="certificate-grid">
-            {paymentCertificates.slice(0, 4).map((record) => (
-              <div className="certificate-item" key={`${record.month}-${record.hash}`}>
+            {recentPayments.map((record) => (
+              <div className="certificate-item" key={record.paymentRecordId}>
                 <div className="certificate-top">
                   <span className="chain-mini" aria-hidden="true">
                     #
                   </span>
-                  <span className={`status-tag ${record.status === "ON TIME" ? "on-time" : "late"}`}>
-                    {record.status}
+                  <span
+                    className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}
+                  >
+                    {paymentStatusText(record.status)}
                   </span>
                 </div>
                 <p>{record.month}</p>
-                <strong>{record.amount}</strong>
-                <span className="tx-line">ref {record.hash}</span>
+                <strong>{formatUsd(record.amountUsd)}</strong>
+                <span className="tx-line">ref {record.txHash}</span>
               </div>
             ))}
           </div>
@@ -104,25 +162,31 @@ export default function DashboardOverviewPage() {
             <div className="progress-row">
               <div>
                 <p>Tier 2 Builder</p>
-                <small>Unlocked</small>
+                <small>Unlock score: 450</small>
               </div>
-              <span className="status-tag eligible">ELIGIBLE</span>
+              <span className={`status-tag ${score >= 450 ? "eligible" : "locked"}`}>
+                {score >= 450 ? "ELIGIBLE" : "LOCKED"}
+              </span>
             </div>
 
             <div className="progress-row">
               <div>
                 <p>Tier 3 Established</p>
-                <small>Current maximum: $75,000</small>
+                <small>Unlock score: 600</small>
               </div>
-              <span className="status-tag active">ACTIVE</span>
+              <span className={`status-tag ${score >= 600 ? "active" : "locked"}`}>
+                {score >= 600 ? "ACTIVE" : "LOCKED"}
+              </span>
             </div>
 
             <div className="progress-row">
               <div>
                 <p>Tier 4 Trusted</p>
-                <small>Need 88 points to unlock</small>
+                <small>Unlock score: 700</small>
               </div>
-              <span className="status-tag locked">LOCKED</span>
+              <span className={`status-tag ${score >= 700 ? "active" : "locked"}`}>
+                {score >= 700 ? "UNLOCKED" : "LOCKED"}
+              </span>
             </div>
           </div>
         </article>
@@ -131,9 +195,9 @@ export default function DashboardOverviewPage() {
       <section className="table-card">
         <div className="panel-header">
           <h3>Recent Transactions</h3>
-          <button className="btn btn-ghost small" type="button">
+          <Link to="/dashboard/transactions" className="btn btn-ghost small btn-link">
             View All
-          </button>
+          </Link>
         </div>
         <table>
           <thead>
@@ -145,14 +209,14 @@ export default function DashboardOverviewPage() {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((tx) => (
-              <tr key={`${tx.type}-${tx.ref}`}>
-                <td>{tx.type}</td>
-                <td>{tx.date}</td>
+            {recentTransactions.map((tx) => (
+              <tr key={tx.eventId}>
+                <td>{txLabel(tx.eventType)}</td>
+                <td>{new Date(tx.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
                 <td>
-                  <span className="status-tag active">{tx.status}</span>
+                  <span className={`status-tag ${txStatusTone(tx.status)}`}>{tx.status}</span>
                 </td>
-                <td className="mono">{tx.ref}</td>
+                <td className="mono">{tx.txHash}</td>
               </tr>
             ))}
           </tbody>
