@@ -77,7 +77,7 @@ describe("RentLedger contracts", function () {
     const score = await scoreReader.getScore(tenant.address);
     expect(Number(score)).to.be.gte(450);
 
-    const requestTx = await loanGateway.connect(tenant).requestLoan(2, 2000000);
+    const requestTx = await loanGateway.connect(tenant).requestLoan(2, 1000000);
     const requestReceipt = await requestTx.wait();
     const requested = requestReceipt.logs.find((l) => l.fragment?.name === "LoanRequested");
     expect(requested).to.not.equal(undefined);

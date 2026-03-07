@@ -142,10 +142,10 @@ contract LoanGateway {
     function _tierConfig(
         uint8 tier
     ) internal pure returns (uint16 minScore, uint256 maxAmountUsdCents, uint16 aprBps) {
-        if (tier == 1) return (300, 10000 * 100, 1800);
-        if (tier == 2) return (450, 30000 * 100, 1500);
-        if (tier == 3) return (600, 75000 * 100, 1200);
-        if (tier == 4) return (700, 150000 * 100, 1000);
+        if (tier == 1) return (300, 5000 * 100, 1800);
+        if (tier == 2) return (450, 10000 * 100, 1500);
+        if (tier == 3) return (600, 15000 * 100, 1200);
+        if (tier == 4) return (700, 20000 * 100, 1000);
         revert("invalid tier");
     }
 }

@@ -76,8 +76,8 @@
       ]
     },
     "E:\\Hackathons\\CTC Hackathon\\contracts\\contracts\\LoanGateway.sol": {
-      "lastModificationDate": 1772746930084,
-      "contentHash": "c8ebb1d1d7c04081a7741f25ba270525",
+      "lastModificationDate": 1772888292913,
+      "contentHash": "aaf43018001a0d147ad065eed7338ea7",
       "sourceName": "contracts/LoanGateway.sol",
       "solcConfig": {
         "version": "0.8.24",

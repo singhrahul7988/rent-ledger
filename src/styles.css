@@ -135,6 +135,11 @@ body {
   gap: 12px;
 }
 
+.nav-actions .btn-link,
+.pricing-topbar-actions .btn-link {
+  white-space: nowrap;
+}
+
 .btn {
   border-radius: var(--radius-button);
   height: 44px;

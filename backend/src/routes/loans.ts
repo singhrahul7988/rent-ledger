@@ -17,10 +17,10 @@ const requestSchema = z.object({
 });
 
 const tierTerms: Record<1 | 2 | 3 | 4, { minScore: number; maxAmountUsd: number; apr: number; tenorMonths: number }> = {
-  1: { minScore: 300, maxAmountUsd: 10000, apr: 18, tenorMonths: 6 },
-  2: { minScore: 450, maxAmountUsd: 30000, apr: 15, tenorMonths: 6 },
-  3: { minScore: 600, maxAmountUsd: 75000, apr: 12, tenorMonths: 6 },
-  4: { minScore: 700, maxAmountUsd: 150000, apr: 10, tenorMonths: 6 }
+  1: { minScore: 300, maxAmountUsd: 5000, apr: 18, tenorMonths: 6 },
+  2: { minScore: 450, maxAmountUsd: 10000, apr: 15, tenorMonths: 6 },
+  3: { minScore: 600, maxAmountUsd: 15000, apr: 12, tenorMonths: 6 },
+  4: { minScore: 700, maxAmountUsd: 20000, apr: 10, tenorMonths: 6 }
 };
 const explorerBaseUrl = process.env.EXPLORER_BASE_URL || "https://creditcoin-testnet.blockscout.com/tx/";
 

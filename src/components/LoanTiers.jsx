@@ -16,7 +16,7 @@ function LockIcon({ open = false }) {
 const TIERS = [
   {
     name: "Tier 1 Starter",
-    details: "$10,000 - 18% APR",
+    details: "$5,000 - 18% APR",
     unlock: "Unlocks at score 300",
     tone: "tier-1",
     open: true,
@@ -24,19 +24,19 @@ const TIERS = [
   },
   {
     name: "Tier 2 Builder",
-    details: "$30,000 - 15% APR",
+    details: "$10,000 - 15% APR",
     unlock: "Unlocks at score 450",
     tone: "tier-2"
   },
   {
     name: "Tier 3 Established",
-    details: "$75,000 - 12% APR",
+    details: "$15,000 - 12% APR",
     unlock: "Unlocks at score 600",
     tone: "tier-3"
   },
   {
     name: "Tier 4 Trusted",
-    details: "$150,000 - 10% APR",
+    details: "$20,000 - 10% APR",
     unlock: "Unlocks at score 700+",
     tone: "tier-4"
   }

@@ -28,7 +28,7 @@ export default function Hero() {
 
           <div className="hero-cta">
             <Link to="/signin" className="btn btn-primary btn-link">
-              Open Demo Account
+              Start Building Credit
             </Link>
             <a href="#how-it-works" className="btn btn-outline btn-link">
               See How It Works -&gt;
@@ -86,7 +86,7 @@ export default function Hero() {
 
           <article className="preview-card mini-card loan-card">
             <p>Loan Eligible</p>
-            <strong>$10,000 unlocked</strong>
+            <strong>$5,000 unlocked</strong>
           </article>
         </div>
       </div>

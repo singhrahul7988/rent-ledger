@@ -2,10 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const tiers = [
-  { id: 1, tier: "Tier 1 Starter", limit: 10000, apr: 18, unlockScore: 300, className: "tier-1" },
-  { id: 2, tier: "Tier 2 Builder", limit: 30000, apr: 15, unlockScore: 450, className: "tier-2" },
-  { id: 3, tier: "Tier 3 Established", limit: 75000, apr: 12, unlockScore: 600, className: "tier-3" },
-  { id: 4, tier: "Tier 4 Trusted", limit: 150000, apr: 10, unlockScore: 700, className: "tier-4" }
+  { id: 1, tier: "Tier 1 Starter", limit: 5000, apr: 18, unlockScore: 300, className: "tier-1" },
+  { id: 2, tier: "Tier 2 Builder", limit: 10000, apr: 15, unlockScore: 450, className: "tier-2" },
+  { id: 3, tier: "Tier 3 Established", limit: 15000, apr: 12, unlockScore: 600, className: "tier-3" },
+  { id: 4, tier: "Tier 4 Trusted", limit: 20000, apr: 10, unlockScore: 700, className: "tier-4" }
 ];
 
 function formatUsd(value) {

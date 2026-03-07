@@ -9,6 +9,7 @@ Last updated: 2026-03-07
   - Frontend: React + Vite
   - Backend: Express + TypeScript
   - Contracts: Hardhat + Solidity
+
 - Current stage:
   - UI/UX pass is largely complete for demo.
   - Demo flow script has been run successfully by user.

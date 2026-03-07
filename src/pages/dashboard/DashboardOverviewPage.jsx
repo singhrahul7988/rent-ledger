@@ -17,10 +17,10 @@ function scoreToTier(score) {
 }
 
 function scoreToLoanTier(score) {
-  if (score >= 700) return { tier: "Tier 4", max: "$150,000", apr: "10%" };
-  if (score >= 600) return { tier: "Tier 3", max: "$75,000", apr: "12%" };
-  if (score >= 450) return { tier: "Tier 2", max: "$30,000", apr: "15%" };
-  if (score >= 300) return { tier: "Tier 1", max: "$10,000", apr: "18%" };
+  if (score >= 700) return { tier: "Tier 4", max: "$20,000", apr: "10%" };
+  if (score >= 600) return { tier: "Tier 3", max: "$15,000", apr: "12%" };
+  if (score >= 450) return { tier: "Tier 2", max: "$10,000", apr: "15%" };
+  if (score >= 300) return { tier: "Tier 1", max: "$5,000", apr: "18%" };
   return { tier: "Locked", max: "$0", apr: "-" };
 }
 

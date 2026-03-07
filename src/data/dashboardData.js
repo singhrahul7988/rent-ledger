@@ -124,7 +124,7 @@ export const activeLease = {
 export const loanTiers = [
   {
     tier: "Tier 1 Starter",
-    limit: "$10,000",
+    limit: "$5,000",
     apr: "18%",
     unlockScore: 300,
     status: "ELIGIBLE",
@@ -132,7 +132,7 @@ export const loanTiers = [
   },
   {
     tier: "Tier 2 Builder",
-    limit: "$30,000",
+    limit: "$10,000",
     apr: "15%",
     unlockScore: 450,
     status: "ELIGIBLE",
@@ -140,7 +140,7 @@ export const loanTiers = [
   },
   {
     tier: "Tier 3 Established",
-    limit: "$75,000",
+    limit: "$15,000",
     apr: "12%",
     unlockScore: 600,
     status: "ACTIVE",
@@ -148,7 +148,7 @@ export const loanTiers = [
   },
   {
     tier: "Tier 4 Trusted",
-    limit: "$150,000",
+    limit: "$20,000",
     apr: "10%",
     unlockScore: 700,
     status: "LOCKED",

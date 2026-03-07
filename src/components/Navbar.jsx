@@ -19,7 +19,7 @@ export default function Navbar({ scrolled }) {
             Sign In
           </Link>
           <Link to="/signin" className="btn btn-primary btn-link">
-            Open Demo Account
+            Start Building Credit
           </Link>
         </div>
       </div>

@@ -60,7 +60,7 @@ const STEPS = [
     step: "03",
     icon: <TrendIcon />,
     title: "Your RentScore grows, unlock loans",
-    body: "After 3 payments, unlock your first credit line. After 12 months, access up to $15,000 at 10% APR with no collateral needed."
+    body: "After 3 payments, unlock your first credit line. After 12 months, access up to $20,000 at 10% APR with no collateral needed."
   }
 ];
 
