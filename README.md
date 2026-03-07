@@ -1,4 +1,4 @@
-# RentLedger
+﻿# RentLedger
 
 RentLedger is a desktop-first web platform that converts verified rent payments into a RentScore (0-850) and unlocks fair-rate loan eligibility.
 
@@ -9,7 +9,10 @@ This repository contains:
 
 ## Current status
 
-- Frontend dashboard is wired end-to-end to backend APIs in mock mode.
+- Frontend dashboard is wired end-to-end to backend APIs.
+- Backend supports:
+  - `mock` mode (stable demo, no real chain write)
+  - `live` mode (real on-chain payment writes from dashboard)
 - Smart contracts compile and tests pass.
 - Testnet deployment scripts are included for live on-chain proof.
 
@@ -17,11 +20,11 @@ This repository contains:
 
 ```text
 .
-├─ src/                  # frontend
-├─ backend/              # backend API server
-├─ contracts/            # smart contracts + hardhat
-├─ docs/                 # PRD, UI spec, judge runbook
-├─ .env.example          # frontend env template
+|- src/                  # frontend
+|- backend/              # backend API server
+|- contracts/            # smart contracts + hardhat
+|- docs/                 # PRD, UI spec, judge runbook
+|- .env.example          # frontend env template
 ```
 
 ## 1) Local setup
@@ -38,6 +41,13 @@ npm run dev
 ```
 
 Backend runs on `http://localhost:8080`.
+Default mode is `mock` unless you set `BLOCKCHAIN_MODE=live`.
+
+Quick check:
+```bash
+curl http://localhost:8080/health
+```
+You should see `"blockchainMode":"mock"` or `"blockchainMode":"live"`.
 
 ### B. Frontend
 
@@ -58,22 +68,66 @@ npm install
 npm run test
 ```
 
-## 2) End-to-end demo flow (frontend -> backend APIs)
+## 2) Switch backend to live mode (real on-chain dashboard payments)
+
+Use this when you want **Pay Rent from UI** to create real testnet transactions.
+
+1. Make sure contracts are deployed first (see section 5).
+2. In `backend/.env`, set:
+
+```env
+BLOCKCHAIN_MODE=live
+CTC_RPC_URL=<your_ctc_testnet_rpc>
+BACKEND_WALLET_PRIVATE_KEY=<test_wallet_private_key>
+LEASE_REGISTRY_ADDRESS=<deployed_lease_registry>
+ESCROW_CONTRACT_ADDRESS=<deployed_escrow_contract>
+PAYMENT_RECORD_NFT_ADDRESS=<deployed_payment_record_nft>
+DEMO_LANDLORD_ADDRESS=<fallback_landlord_wallet_optional>
+DEMO_NATIVE_VALUE=0.0001
+EXPLORER_BASE_URL=https://creditcoin-testnet.blockscout.com/tx/
+```
+
+3. Restart backend:
+```bash
+cd backend
+npm run dev
+```
+4. Verify mode:
+```bash
+curl http://localhost:8080/health
+```
+Expected: `"blockchainMode":"live"`.
+
+## 3) End-to-end app flow (frontend -> backend APIs)
 
 1. Open `/signin` and use the demo account:
    - email: `creditcoin7@gmail.com`
    - password: `credit31`
-2. Go to **Pay Rent** and click **Record Payment**.
-3. Verify updates in:
+2. Go to **Pay Rent** and fill:
+   - Lease Name
+   - Landlord Name
+   - Landlord Wallet Address (`0x...`)
+   - Rent Amount
+3. Click **Record Payment**.
+4. Verify updates in:
    - Dashboard (score + payment certificate cards)
    - Payment History
    - Transactions
    - Loans eligibility
+5. Verify blockchain tx:
+   - Open **Transactions** page
+   - Click explorer link on the event row
+   - Or open directly:
+     - `https://creditcoin-testnet.blockscout.com/tx/<txHash>`
+
+Notes:
+- In `mock` mode, tx hashes are simulated.
+- In `live` mode, tx hashes are real testnet tx hashes.
 
 Frontend API client is in:
 - `src/lib/apiClient.js`
 
-## 3) API endpoints currently used
+## 4) API endpoints currently used
 
 Base: `/api/v1`
 
@@ -88,7 +142,7 @@ Base: `/api/v1`
 - `POST /loans/request`
 - `GET /transactions/:accountId`
 
-## 4) Deploy smart contracts to Creditcoin testnet
+## 5) Deploy smart contracts to Creditcoin testnet
 
 ### Prerequisites
 
@@ -122,7 +176,7 @@ npm run demo:flow
 
 This script registers a lease and records a rent payment on-chain, then prints explorer links.
 
-## 5) Get Creditcoin testnet tokens (manual step)
+## 6) Get Creditcoin testnet tokens (manual step)
 
 Use official docs:
 - Faucet guide: https://docs.creditcoin.org/getting-started/testnet#3-get-testnet-tokens-from-faucet
@@ -133,9 +187,9 @@ Typical flow:
 3. Run faucet command with your wallet address.
 4. Confirm balance on explorer.
 
-## 6) Free deployment options (recommended)
+## 7) Free deployment options (recommended)
 
-## Frontend: Vercel (Hobby)
+### Frontend: Vercel (Hobby)
 
 1. Import repo in Vercel.
 2. Framework: Vite.
@@ -148,7 +202,7 @@ Typical flow:
 Vercel docs:
 - https://vercel.com/docs/plans/hobby
 
-## Backend: Render (free tier options)
+### Backend: Render (free tier options)
 
 1. Create a new Web Service from this repo.
 2. Root directory: `backend`
@@ -156,13 +210,20 @@ Vercel docs:
 4. Start command: `npm run start`
 5. Env vars:
    - `PORT=8080`
-   - `BLOCKCHAIN_MODE=mock`
+   - `BLOCKCHAIN_MODE=live` (or `mock` for fallback demo mode)
+   - `CTC_RPC_URL`
+   - `BACKEND_WALLET_PRIVATE_KEY`
+   - `LEASE_REGISTRY_ADDRESS`
+   - `ESCROW_CONTRACT_ADDRESS`
+   - `PAYMENT_RECORD_NFT_ADDRESS`
+   - `DEMO_LANDLORD_ADDRESS` (optional)
+   - `DEMO_NATIVE_VALUE=0.0001`
    - `EXPLORER_BASE_URL=https://creditcoin-testnet.blockscout.com/tx/`
 
 Render docs:
 - https://render.com/docs/free
 
-## 7) Manual setup checklist before submission
+## 8) Manual setup checklist before submission
 
 - Deploy contracts and save explorer links.
 - Deploy backend and frontend URLs.
@@ -170,10 +231,11 @@ Render docs:
   - repo URL
   - live demo URL
   - video URL
-  - contract addresses + explorer proof
+- contract addresses + explorer proof
 
 ## Notes
 
-- Backend blockchain mode defaults to `mock` for stable demo UX.
+- Backend defaults to `mock` unless `BLOCKCHAIN_MODE=live`.
 - For judge proof, use the contract testnet deployment + `demo:flow` tx links.
 - Dashboard notifications surface key events (payment, loan, score and error alerts) for judge visibility.
+
