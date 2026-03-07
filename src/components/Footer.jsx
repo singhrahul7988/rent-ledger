@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="container footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>Your rent builds your future</p>
+          <p>Your rent builds your credit</p>
         </div>
 
         <nav className="footer-links">

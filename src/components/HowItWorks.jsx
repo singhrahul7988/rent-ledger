@@ -48,7 +48,7 @@ const STEPS = [
     step: "01",
     icon: <HouseIcon />,
     title: "Pay rent as usual",
-    body: "Connect your lease agreement. Pay monthly rent through RentLedger's automated escrow just like a bank transfer."
+    body: "Connect your lease agreement. Pay monthly rent through Rent Ledger's automated escrow just like a bank transfer."
   },
   {
     step: "02",

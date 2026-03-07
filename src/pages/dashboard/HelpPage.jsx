@@ -5,7 +5,7 @@ const faqs = [
       "RentScore uses verified payment count, consistency streaks, rental amount tier, tenure bonus, and late payment penalties."
   },
   {
-    question: "Do I need a bank account to use RentLedger?",
+    question: "Do I need a bank account to use Rent Ledger?",
     answer:
       "No. Payments can be confirmed through supported digital methods and recorded through the automated payment system."
   },

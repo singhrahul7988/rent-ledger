@@ -2,6 +2,7 @@ export type PaymentStatus = "ON_TIME" | "LATE";
 export type LoanState = "LOCKED" | "ELIGIBLE" | "ACTIVE";
 export type LoanStatus = "ACTIVE" | "PAID" | "DEFAULTED";
 export type TransactionStatus = "SUCCESS" | "PENDING" | "FAILED";
+export type LoanApplicationStatus = "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface Lease {
   leaseId: string;
@@ -43,6 +44,32 @@ export interface Loan {
   disbursedAt: string;
   nextInstallmentDate: string;
   status: LoanStatus;
+}
+
+export interface LoanApplication {
+  applicationId: string;
+  accountId: string;
+  tier: 1 | 2 | 3 | 4;
+  requestedAmountUsd: number;
+  requestedApr: number;
+  tenorMonths: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  annualIncomeUsd: number;
+  employmentStatus: "EMPLOYED" | "SELF_EMPLOYED" | "STUDENT" | "OTHER";
+  purpose: string;
+  idDocumentType: "PASSPORT" | "NATIONAL_ID" | "DRIVERS_LICENSE";
+  idDocumentNumberMasked: string;
+  addressLine1: string;
+  city: string;
+  country: string;
+  postalCode: string;
+  consentKyc: boolean;
+  consentTerms: boolean;
+  status: LoanApplicationStatus;
+  createdAt: string;
 }
 
 export interface TransactionEvent {

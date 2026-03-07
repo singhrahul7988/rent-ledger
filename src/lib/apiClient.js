@@ -106,4 +106,15 @@ export function requestLoan(payload) {
   });
 }
 
+export function createLoanApplication(payload) {
+  return apiRequest("/loans/applications", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getLoanApplications(accountId) {
+  return apiRequest(`/loans/applications/${accountId}`);
+}
+
 export { API_BASE };

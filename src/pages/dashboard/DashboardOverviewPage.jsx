@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 
 function formatUsd(value) {
@@ -29,7 +30,7 @@ function paymentStatusText(status) {
 }
 
 function txStatusTone(status) {
-  if (status === "SUCCESS") return "active";
+  if (status === "SUCCESS") return "success";
   if (status === "PENDING") return "eligible";
   return "locked";
 }
@@ -42,8 +43,16 @@ function txLabel(eventType) {
     .join(" ");
 }
 
+function shortHash(hash) {
+  const value = String(hash || "");
+  if (!value) return "--";
+  if (value.length <= 18) return value;
+  return `${value.slice(0, 10)}...${value.slice(-6)}`;
+}
+
 export default function DashboardOverviewPage() {
   const { loading, rentScore, payments, transactions } = useOutletContext();
+  const [copiedHash, setCopiedHash] = useState("");
 
   const score = rentScore?.score || 150;
   const tier = scoreToTier(score);
@@ -54,6 +63,17 @@ export default function DashboardOverviewPage() {
 
   const recentPayments = payments.slice(0, 4);
   const recentTransactions = transactions.slice(0, 6);
+
+  const copyTxHash = async (hash) => {
+    if (!hash) return;
+    try {
+      await navigator.clipboard.writeText(hash);
+      setCopiedHash(hash);
+      window.setTimeout(() => setCopiedHash(""), 1400);
+    } catch (_error) {
+      setCopiedHash("");
+    }
+  };
 
   return (
     <>
@@ -142,19 +162,27 @@ export default function DashboardOverviewPage() {
             {recentPayments.length > 0 ? (
               recentPayments.map((record) => (
                 <div className="certificate-item" key={record.paymentRecordId}>
-                  <div className="certificate-top">
-                    <span className="chain-mini" aria-hidden="true">
-                      #
-                    </span>
+                  <p>{record.month}</p>
+                  <div className="certificate-meta-row">
+                    <strong>{formatUsd(record.amountUsd)}</strong>
                     <span
                       className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}
                     >
                       {paymentStatusText(record.status)}
                     </span>
                   </div>
-                  <p>{record.month}</p>
-                  <strong>{formatUsd(record.amountUsd)}</strong>
-                  <span className="tx-line">ref {record.txHash}</span>
+                  <div className="certificate-tx-row">
+                    <span className="tx-line" title={record.txHash}>
+                      ref {shortHash(record.txHash)}
+                    </span>
+                    <button
+                      className="btn btn-ghost tiny"
+                      type="button"
+                      onClick={() => copyTxHash(record.txHash)}
+                    >
+                      {copiedHash === record.txHash ? "Copied" : "Copy"}
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -168,7 +196,17 @@ export default function DashboardOverviewPage() {
             <h3>Loan Progress</h3>
           </div>
 
-          <div className="progress-list">
+          <div className="progress-list loan-progress-scroll">
+            <div className="progress-row">
+              <div>
+                <p>Tier 1 Starter</p>
+                <small>Unlock score: 300</small>
+              </div>
+              <span className={`status-tag ${score >= 300 ? "eligible" : "locked"}`}>
+                {score >= 300 ? "ELIGIBLE" : "LOCKED"}
+              </span>
+            </div>
+
             <div className="progress-row">
               <div>
                 <p>Tier 2 Builder</p>

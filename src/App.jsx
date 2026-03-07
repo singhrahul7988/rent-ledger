@@ -9,9 +9,12 @@ import PaymentHistoryPage from "./pages/dashboard/PaymentHistoryPage";
 import MyRentScorePage from "./pages/dashboard/MyRentScorePage";
 import CreditReportPage from "./pages/dashboard/CreditReportPage";
 import LoansPage from "./pages/dashboard/LoansPage";
+import LoanApplicationPage from "./pages/dashboard/LoanApplicationPage";
 import TransactionsPage from "./pages/dashboard/TransactionsPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import HelpPage from "./pages/dashboard/HelpPage";
+import CertificateViewPage from "./pages/CertificateViewPage";
+import SharedCreditReportPage from "./pages/SharedCreditReportPage";
 
 export default function App() {
   return (
@@ -24,6 +27,8 @@ export default function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<Navigate to="/signin" replace />} />
+        <Route path="/certificate/:paymentRecordId" element={<CertificateViewPage />} />
+        <Route path="/shared-report/:token" element={<SharedCreditReportPage />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardOverviewPage />} />
           <Route path="pay-rent" element={<PayRentPage />} />
@@ -31,6 +36,7 @@ export default function App() {
           <Route path="my-rentscore" element={<MyRentScorePage />} />
           <Route path="credit-report" element={<CreditReportPage />} />
           <Route path="loans" element={<LoansPage />} />
+          <Route path="loans/apply" element={<LoanApplicationPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="help" element={<HelpPage />} />

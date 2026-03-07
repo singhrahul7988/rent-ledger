@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useMemo, useRef } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 const tiers = [
   { id: 1, tier: "Tier 1 Starter", limit: 5000, apr: 18, unlockScore: 300, className: "tier-1" },
@@ -23,15 +23,11 @@ function addMonths(dateInput, months) {
 }
 
 export default function LoansPage() {
+  const navigate = useNavigate();
   const {
     rentScore,
-    loans,
-    requestingLoan,
-    requestLoanAction,
-    checkLoanEligibility
+    loans
   } = useOutletContext();
-  const [loanMessage, setLoanMessage] = useState("");
-  const [loanError, setLoanError] = useState("");
   const loanTermsRef = useRef(null);
 
   const score = rentScore?.score || 150;
@@ -64,30 +60,9 @@ export default function LoansPage() {
     }));
   }, [activeLoan]);
 
-  const handleRequestLoan = async (tier) => {
-    setLoanError("");
-    setLoanMessage("");
-
-    try {
-      const eligibility = await checkLoanEligibility(tier.id);
-      if (!eligibility.eligible) {
-        setLoanError(`Not eligible for ${tier.tier} yet. Score required: ${tier.unlockScore}.`);
-        return;
-      }
-
-      const requestedAmount = Math.min(tier.limit, 2200);
-      const response = await requestLoanAction({
-        tier: tier.id,
-        amountUsd: requestedAmount
-      });
-      setLoanMessage(
-        `Loan ${response.loanId} requested successfully. Next installment due ${new Date(
-          response.nextInstallmentDate
-        ).toLocaleDateString("en-US")}.`
-      );
-    } catch (error) {
-      setLoanError(error instanceof Error ? error.message : "Unable to request loan.");
-    }
+  const handleOpenLoanApplication = (tier) => {
+    if (tier.status === "LOCKED") return;
+    navigate(`/dashboard/loans/apply?tier=${tier.id}`);
   };
 
   const scrollToLoanTerms = () => {
@@ -118,16 +93,14 @@ export default function LoansPage() {
               <button
                 className={`btn ${tier.status === "LOCKED" ? "btn-secondary" : "btn-primary"} small full-width`}
                 type="button"
-                disabled={tier.status === "LOCKED" || requestingLoan}
-                onClick={() => handleRequestLoan(tier)}
+                disabled={tier.status === "LOCKED"}
+                onClick={() => handleOpenLoanApplication(tier)}
               >
-                {requestingLoan ? "Submitting..." : tier.status === "ACTIVE" ? "Manage Loan" : "Request Loan"}
+                {tier.status === "ACTIVE" ? "Manage Loan" : "Request Loan"}
               </button>
             </article>
           ))}
         </div>
-        {loanMessage ? <p className="action-success">{loanMessage}</p> : null}
-        {loanError ? <p className="action-error">{loanError}</p> : null}
       </section>
 
       <section className="dashboard-columns">
@@ -180,7 +153,7 @@ export default function LoansPage() {
           </div>
           <div className="apr-comparison">
             <div>
-              <p>RentLedger best current tier</p>
+              <p>Rent Ledger best current tier</p>
               <strong>{score >= 700 ? "10% APR" : score >= 600 ? "12% APR" : score >= 450 ? "15% APR" : "18% APR"}</strong>
             </div>
             <div>

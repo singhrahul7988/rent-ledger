@@ -26,7 +26,7 @@ export default function Brand({ to = "/" }) {
           </g>
         </svg>
       </span>
-      <span className="brand-text">RentLedger</span>
+      <span className="brand-text">Rent Ledger</span>
     </Link>
   );
 }

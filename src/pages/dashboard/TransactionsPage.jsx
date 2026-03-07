@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 function statusTone(status) {
-  if (status === "SUCCESS") return "active";
+  if (status === "SUCCESS") return "success";
   if (status === "PENDING") return "eligible";
   return "locked";
 }

@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import {
+  buildScoreReportBlob,
+  buildScoreReportData,
+  scoreTier
+} from "../../utils/scoreReportPdf";
 
 function tierLabel(score) {
-  if (score >= 700) return "Credit Trusted";
-  if (score >= 600) return "Credit Established";
-  if (score >= 450) return "Credit Builder";
-  if (score >= 300) return "Credit Starter";
-  return "Building Credit";
+  return scoreTier(score);
 }
 
 function tierClass(score) {
@@ -17,80 +18,33 @@ function tierClass(score) {
   return "building";
 }
 
-function escapePdfText(value) {
-  return String(value || "")
-    .replace(/[^\x20-\x7E]/g, "?")
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
-}
-
-function buildPdfBlob(lines) {
-  const encoder = new TextEncoder();
-  const lineHeight = 18;
-  const startY = 760;
-
-  const content = lines
-    .slice(0, 36)
-    .map((line, index) => {
-      const y = startY - index * lineHeight;
-      return `BT\n/F1 12 Tf\n1 0 0 1 40 ${y} Tm\n(${escapePdfText(line)}) Tj\nET`;
-    })
-    .join("\n");
-
-  const byteLength = encoder.encode(content).length;
-  const objects = [
-    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
-    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
-    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
-    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
-    `5 0 obj\n<< /Length ${byteLength} >>\nstream\n${content}\nendstream\nendobj\n`
-  ];
-
-  const header = "%PDF-1.4\n%----\n";
-  const chunks = [header];
-  const offsets = [0];
-  let currentOffset = encoder.encode(header).length;
-
-  objects.forEach((objectText) => {
-    offsets.push(currentOffset);
-    chunks.push(objectText);
-    currentOffset += encoder.encode(objectText).length;
-  });
-
-  const xrefStart = currentOffset;
-  const xrefLines = ["xref", "0 6", "0000000000 65535 f "];
-  for (let i = 1; i <= 5; i += 1) {
-    xrefLines.push(`${String(offsets[i]).padStart(10, "0")} 00000 n `);
-  }
-
-  const trailer = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  chunks.push(`${xrefLines.join("\n")}\n`);
-  chunks.push(trailer);
-
-  return new Blob(chunks, { type: "application/pdf" });
-}
-
 function buildTrend(payments, finalScore) {
   const sorted = [...payments].sort(
     (a, b) => new Date(a.confirmedAt).getTime() - new Date(b.confirmedAt).getTime()
   );
   if (sorted.length === 0) {
-    return [{ month: "Start", score: 150 }];
+    return [{ month: "Current", score: finalScore }];
   }
 
   let runningScore = 150;
-  return sorted.slice(-5).map((payment) => {
+  const points = sorted.slice(-5).map((payment) => {
     runningScore += payment.status === "ON_TIME" ? 30 : -15;
     runningScore = Math.max(0, Math.min(finalScore, runningScore));
     return {
       month: new Date(payment.confirmedAt).toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric"
+        month: "short"
       }),
       score: runningScore
     };
   });
+
+  points[points.length - 1] = {
+    ...points[points.length - 1],
+    month: "Current",
+    score: finalScore
+  };
+
+  return points;
 }
 
 export default function MyRentScorePage() {
@@ -148,39 +102,15 @@ export default function MyRentScorePage() {
 
   const handleDownloadScoreReport = () => {
     const generatedAt = new Date();
-    const paymentCount = payments.length;
-    const onTimeCount = payments.filter((item) => item.status === "ON_TIME").length;
-    const lateCount = Math.max(0, paymentCount - onTimeCount);
-    const avgRent = paymentCount
-      ? Math.round(payments.reduce((sum, record) => sum + Number(record.amountUsd || 0), 0) / paymentCount)
-      : Math.round(factors.avgRentUsd || 0);
-
-    const lines = [
-      "RentLedger Score Report",
-      "",
-      `Generated: ${generatedAt.toLocaleString("en-US")}`,
-      `Account ID: ${accountId || "N/A"}`,
-      "",
-      "Current Score Snapshot",
-      `RentScore: ${score}`,
-      `Tier: ${tierLabel(score)}`,
-      `Points to next tier: ${rentScore?.pointsToNextTier || 0}`,
-      "",
-      "Payment Summary",
-      `Total payments: ${paymentCount}`,
-      `On-time payments: ${onTimeCount}`,
-      `Late payments: ${lateCount}`,
-      `Average monthly rent (USD): ${avgRent}`,
-      "",
-      "Scoring Factors",
-      `Payment Count: +${Math.min(factors.onTimePayments * 30, 300)}`,
-      `Consistency Bonus: ${factors.onTimePayments >= 6 ? "+50" : "+0"}`,
-      `Rental Amount Tier: ${factors.avgRentUsd >= 1000 ? "+50" : factors.avgRentUsd >= 500 ? "+30" : "+10"}`,
-      `Tenure Bonus: ${factors.tenureMonths >= 12 ? "+50" : factors.tenureMonths >= 6 ? "+25" : "+0"}`,
-      `Late Payment Penalty: -${factors.latePayments * 15}`
-    ];
-
-    const blob = buildPdfBlob(lines);
+    const report = buildScoreReportData({
+      accountId,
+      score,
+      pointsToNextTier: rentScore?.pointsToNextTier || 0,
+      payments,
+      factors,
+      generatedAt
+    });
+    const blob = buildScoreReportBlob(report);
     const url = window.URL.createObjectURL(blob);
     const stamp = generatedAt.toISOString().slice(0, 10);
     const link = document.createElement("a");
@@ -193,36 +123,37 @@ export default function MyRentScorePage() {
   };
 
   return (
-    <>
+    <div className="rentscore-page">
       <section className="rentscore-grid">
         <article className="panel-card rentscore-hero">
           <h3>Current RentScore</h3>
           <div className="rentscore-hero-body">
-            <div className="score-gauge-large">
-              <svg viewBox="0 0 220 220" aria-hidden="true">
-                <circle
-                  cx="110"
-                  cy="110"
-                  r="86"
-                  className="gauge-track dashboard-gauge-track"
-                  pathLength="100"
-                />
-                <circle
-                  cx="110"
-                  cy="110"
-                  r="86"
-                  className="gauge-progress dashboard-gauge-progress"
-                  pathLength="100"
-                  style={{ "--score-progress": gaugeProgress }}
-                />
-              </svg>
-              <div className="gauge-center">
-                <strong>{score}</strong>
-                <span>RentScore</span>
+            <div className="rentscore-gauge-column">
+              <div className="score-gauge-large">
+                <svg viewBox="0 0 220 220" aria-hidden="true">
+                  <circle
+                    cx="110"
+                    cy="110"
+                    r="86"
+                    className="gauge-track dashboard-gauge-track"
+                    pathLength="100"
+                  />
+                  <circle
+                    cx="110"
+                    cy="110"
+                    r="86"
+                    className="gauge-progress dashboard-gauge-progress"
+                    pathLength="100"
+                    style={{ "--score-progress": gaugeProgress }}
+                  />
+                </svg>
+                <div className="gauge-center">
+                  <strong>{score}</strong>
+                </div>
               </div>
+              <span className={`tier-tag ${tierClass(score)} rentscore-tier-under-gauge`}>{tierLabel(score)}</span>
             </div>
             <div className="rentscore-summary">
-              <span className={`tier-tag ${tierClass(score)}`}>{tierLabel(score)}</span>
               <p>
                 You are {rentScore?.pointsToNextTier || 0} points away from the next
                 tier. Keep monthly rent on time to accelerate eligibility.
@@ -247,17 +178,23 @@ export default function MyRentScorePage() {
           </div>
         </article>
 
-        <article className="panel-card">
+        <article className="panel-card rentscore-trend-card">
           <div className="panel-header">
             <h3>Score Trend (Recent Records)</h3>
           </div>
           <div className="trend-chart">
-            {trend.map((point) => (
+            {trend.map((point, index) => (
               <div className="trend-col" key={`${point.month}-${point.score}`}>
                 <div className="trend-bar-wrap">
                   <i
                     className="trend-bar"
-                    style={{ height: `${Math.max(14, Math.round((point.score / 850) * 180))}px` }}
+                    style={{
+                      height: `${
+                        index === 0
+                          ? Math.max(12, Math.round(Math.max(14, Math.round((point.score / 850) * 180)) * 0.5))
+                          : Math.max(14, Math.round((point.score / 850) * 180))
+                      }px`
+                    }}
                   ></i>
                 </div>
                 <strong>{point.score}</strong>
@@ -302,6 +239,6 @@ export default function MyRentScorePage() {
           </ul>
         </article>
       </section>
-    </>
+    </div>
   );
 }

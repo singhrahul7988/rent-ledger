@@ -30,6 +30,13 @@ function isAddress(value) {
   return /^0x[a-fA-F0-9]{40}$/.test(String(value || "").trim());
 }
 
+function shortHash(hash) {
+  const value = String(hash || "");
+  if (!value) return "--";
+  if (value.length <= 18) return value;
+  return `${value.slice(0, 10)}...${value.slice(-6)}`;
+}
+
 function formatLeaseOption(lease) {
   if (!lease) return "--";
   return `${lease.leaseId} - Due day ${lease.dueDay}`;
@@ -54,6 +61,7 @@ export default function PayRentPage() {
   const [notes, setNotes] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const [error, setError] = useState("");
+  const [copiedHash, setCopiedHash] = useState("");
   const [draftReady, setDraftReady] = useState(false);
   const [hasInitialisedDefaults, setHasInitialisedDefaults] = useState(false);
 
@@ -232,6 +240,17 @@ export default function PayRentPage() {
     }
   };
 
+  const copyTxHash = async (hash) => {
+    if (!hash) return;
+    try {
+      await navigator.clipboard.writeText(hash);
+      setCopiedHash(hash);
+      window.setTimeout(() => setCopiedHash(""), 1400);
+    } catch (_error) {
+      setCopiedHash("");
+    }
+  };
+
   return (
     <>
       <section className="pay-banner">
@@ -367,17 +386,25 @@ export default function PayRentPage() {
           {payments.length > 0 ? (
             payments.slice(0, 4).map((record) => (
               <div className="certificate-item" key={record.paymentRecordId}>
-                <div className="certificate-top">
-                  <span className="chain-mini" aria-hidden="true">
-                    #
-                  </span>
+                <p>{record.month}</p>
+                <div className="certificate-meta-row">
+                  <strong>{formatUsd(record.amountUsd)}</strong>
                   <span className={`status-tag ${record.status === "ON_TIME" ? "on-time" : "late"}`}>
                     {record.status === "ON_TIME" ? "ON TIME" : "LATE"}
                   </span>
                 </div>
-                <p>{record.month}</p>
-                <strong>{formatUsd(record.amountUsd)}</strong>
-                <span className="tx-line">ref {record.txHash}</span>
+                <div className="certificate-tx-row">
+                  <span className="tx-line" title={record.txHash}>
+                    ref {shortHash(record.txHash)}
+                  </span>
+                  <button
+                    className="btn btn-ghost tiny"
+                    type="button"
+                    onClick={() => copyTxHash(record.txHash)}
+                  >
+                    {copiedHash === record.txHash ? "Copied" : "Copy"}
+                  </button>
+                </div>
               </div>
             ))
           ) : (

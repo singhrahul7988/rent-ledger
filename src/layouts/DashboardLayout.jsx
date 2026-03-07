@@ -118,6 +118,7 @@ const pageTitleByPath = {
   "/dashboard/my-rentscore": "My RentScore",
   "/dashboard/credit-report": "Credit Report",
   "/dashboard/loans": "Loans",
+  "/dashboard/loans/apply": "Loan Application",
   "/dashboard/transactions": "Transactions",
   "/dashboard/settings": "Settings",
   "/dashboard/help": "Help"
@@ -497,7 +498,7 @@ export default function DashboardLayout() {
       <aside className="sidebar">
         <div>
           <Brand to="/dashboard" />
-          <p className="sidebar-tagline">Your rent builds your future</p>
+          <p className="sidebar-tagline">Your rent builds your credit</p>
 
           <div className="sidebar-nav">
             {sidebarGroups.map((group) => (
