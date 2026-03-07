@@ -1,7 +1,7 @@
 const STATS = [
-  ["44M+", "RENTERS WITHOUT CREDIT"],
+  ["1.2B+", "RENTERS WITHOUT CREDIT"],
   ["0", "BANKS NEEDED"],
-  ["$120B", "GLOBAL RENT MARKET"],
+  ["$2.9T", "GLOBAL RENT MARKET"],
   ["18%", "APR VS 120% TRADITIONAL"]
 ];
 
