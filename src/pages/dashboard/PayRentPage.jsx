@@ -37,9 +37,16 @@ function shortHash(hash) {
   return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
+function formatDisplayLeaseId(leaseId) {
+  const raw = String(leaseId || "").trim();
+  if (!raw) return "Lease";
+  const compact = raw.replace(/^lease[_-]?/i, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return compact ? `Lease ${compact}` : "Lease";
+}
+
 function formatLeaseOption(lease) {
   if (!lease) return "--";
-  return `${lease.leaseId} - Due day ${lease.dueDay}`;
+  return `${formatDisplayLeaseId(lease.leaseId)} - Due day ${lease.dueDay}`;
 }
 
 function nextDueDateLabel(dueDay) {
