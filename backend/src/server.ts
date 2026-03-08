@@ -8,10 +8,12 @@ import { loansRouter } from "./routes/loans.js";
 import { transactionsRouter } from "./routes/transactions.js";
 import { tenantsRouter } from "./routes/tenants.js";
 import { BlockchainService } from "./services/blockchainService.js";
+import { isSupabaseConfigured } from "./lib/supabase.js";
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const blockchainService = new BlockchainService(process.env.BLOCKCHAIN_MODE);
+const storageMode = isSupabaseConfigured ? "supabase" : "memory";
 
 app.use(cors());
 app.use(express.json());
@@ -20,7 +22,8 @@ app.get("/health", (_req, res) => {
   return res.status(200).json({
     status: "ok",
     service: "rentledger-backend",
-    blockchainMode: blockchainService.getMode()
+    blockchainMode: blockchainService.getMode(),
+    storageMode
   });
 });
 
@@ -32,5 +35,5 @@ app.use("/api/v1/transactions", transactionsRouter());
 app.use("/api/v1/tenants", tenantsRouter());
 
 app.listen(port, () => {
-  console.log(`rentledger-backend listening on port ${port}`);
+  console.log(`rentledger-backend listening on port ${port} (storage=${storageMode})`);
 });

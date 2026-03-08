@@ -1,9 +1,15 @@
 import { Router } from "express";
 import { z } from "zod";
-import { leases, payments, transactions } from "../data/store.js";
 import { BlockchainService } from "../services/blockchainService.js";
 import { calculateRentScore } from "../services/rentScore.js";
-import type { TransactionEvent } from "../types.js";
+import type { PaymentRecord, TransactionEvent } from "../types.js";
+import {
+  createPaymentRecord,
+  createTransactionRecord,
+  getLeaseById,
+  listPaymentsByAccount,
+  updateLeaseRecord
+} from "../lib/persistence.js";
 
 const initiateSchema = z.object({
   leaseId: z.string().min(4),
@@ -52,26 +58,43 @@ function toExplorerUrl(txHash: string) {
 export function paymentsRouter(blockchainService: BlockchainService) {
   const router = Router();
 
-  router.post("/initiate", (req, res) => {
+  router.post("/initiate", async (req, res) => {
     const parsed = initiateSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid payment payload", issues: parsed.error.flatten() });
     }
 
-    const lease = leases.find((l) => l.leaseId === parsed.data.leaseId);
+    let lease = null;
+    try {
+      lease = await getLeaseById(parsed.data.leaseId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to fetch lease";
+      return res.status(500).json({ error: message });
+    }
+
     if (!lease) {
       return res.status(404).json({ error: "Lease not found" });
     }
 
     const paymentIntentId = `pay_${Math.random().toString(36).slice(2, 7)}`;
-    if (parsed.data.landlordName) {
-      lease.landlordName = parsed.data.landlordName.trim();
-    }
+    const leasePatch: Parameters<typeof updateLeaseRecord>[1] = {};
+    if (parsed.data.landlordName) leasePatch.landlordName = parsed.data.landlordName.trim();
     if (parsed.data.landlordAccountAddress) {
-      lease.landlordAccountAddress = parsed.data.landlordAccountAddress;
+      leasePatch.landlordAccountAddress = parsed.data.landlordAccountAddress;
     }
-    if (parsed.data.amountUsd > 0) {
-      lease.monthlyRentUsd = parsed.data.amountUsd;
+    if (parsed.data.amountUsd > 0) leasePatch.monthlyRentUsd = parsed.data.amountUsd;
+
+    if (Object.keys(leasePatch).length > 0) {
+      try {
+        await updateLeaseRecord(lease.leaseId, leasePatch);
+        lease = {
+          ...lease,
+          ...leasePatch
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to update lease details";
+        return res.status(500).json({ error: message });
+      }
     }
 
     paymentIntents.push({
@@ -104,78 +127,88 @@ export function paymentsRouter(blockchainService: BlockchainService) {
       return res.status(400).json({ error: "Invalid webhook payload", issues: parsed.error.flatten() });
     }
 
-    const intent = paymentIntents.find((p) => p.paymentIntentId === parsed.data.paymentIntentId);
-    if (!intent) {
-      return res.status(404).json({ error: "Payment intent not found" });
+    try {
+      const intent = paymentIntents.find((p) => p.paymentIntentId === parsed.data.paymentIntentId);
+      if (!intent) {
+        return res.status(404).json({ error: "Payment intent not found" });
+      }
+
+      if (parsed.data.networkStatus === "FAILED") {
+        intent.status = "FAILED";
+        return res.status(200).json({ paymentIntentId: intent.paymentIntentId, status: intent.status });
+      }
+
+      const onchain = await blockchainService.recordPaymentOnChain({
+        leaseId: intent.leaseId,
+        amountUsd: intent.amountUsd,
+        statusCode: 1,
+        dueDay: intent.dueDay,
+        monthlyRentUsd: intent.monthlyRentUsd,
+        landlordAccountAddress: intent.landlordAccountAddress,
+        onchainLeaseId: intent.onchainLeaseId
+      });
+
+      intent.status = "CONFIRMED";
+      const confirmedAt = parsed.data.confirmedAt || new Date().toISOString();
+
+      const monthLabel = new Date(confirmedAt).toLocaleString("en-US", {
+        month: "long",
+        year: "numeric"
+      });
+
+      const paymentRecord: PaymentRecord = {
+        paymentRecordId: onchain.paymentRecordId,
+        leaseId: intent.leaseId,
+        month: monthLabel,
+        amountUsd: intent.amountUsd,
+        status: "ON_TIME",
+        txHash: parsed.data.txHash || onchain.txHash,
+        certificateTokenId: onchain.tokenId,
+        confirmedAt
+      };
+      await createPaymentRecord(paymentRecord);
+
+      const lease = await getLeaseById(intent.leaseId);
+      if (lease && onchain.onchainLeaseId) {
+        await updateLeaseRecord(lease.leaseId, { onchainLeaseId: onchain.onchainLeaseId });
+      }
+
+      const targetAccountId = lease?.tenantAccountId || intent.payerAccountId;
+      const accountPayments = await listPaymentsByAccount(targetAccountId);
+      const scoreSnapshot = calculateRentScore(targetAccountId, accountPayments);
+
+      const tx: TransactionEvent = {
+        eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
+        accountId: targetAccountId,
+        eventType: "PAYMENT_CONFIRMED",
+        status: "SUCCESS",
+        timestamp: confirmedAt,
+        txHash: parsed.data.txHash || onchain.txHash,
+        explorerUrl: toExplorerUrl(parsed.data.txHash || onchain.txHash)
+      };
+      await createTransactionRecord(tx);
+
+      return res.status(200).json({
+        paymentRecordId: onchain.paymentRecordId,
+        certificateTokenId: onchain.tokenId,
+        scoreDelta: 18,
+        newScore: scoreSnapshot.score
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to confirm payment";
+      return res.status(500).json({ error: message });
     }
-
-    if (parsed.data.networkStatus === "FAILED") {
-      intent.status = "FAILED";
-      return res.status(200).json({ paymentIntentId: intent.paymentIntentId, status: intent.status });
-    }
-
-    const onchain = await blockchainService.recordPaymentOnChain({
-      leaseId: intent.leaseId,
-      amountUsd: intent.amountUsd,
-      statusCode: 1,
-      dueDay: intent.dueDay,
-      monthlyRentUsd: intent.monthlyRentUsd,
-      landlordAccountAddress: intent.landlordAccountAddress,
-      onchainLeaseId: intent.onchainLeaseId
-    });
-
-    intent.status = "CONFIRMED";
-    const confirmedAt = parsed.data.confirmedAt || new Date().toISOString();
-
-    const monthLabel = new Date(confirmedAt).toLocaleString("en-US", {
-      month: "long",
-      year: "numeric"
-    });
-
-    payments.unshift({
-      paymentRecordId: onchain.paymentRecordId,
-      leaseId: intent.leaseId,
-      month: monthLabel,
-      amountUsd: intent.amountUsd,
-      status: "ON_TIME",
-      txHash: parsed.data.txHash || onchain.txHash,
-      certificateTokenId: onchain.tokenId,
-      confirmedAt
-    });
-
-    const lease = leases.find((l) => l.leaseId === intent.leaseId);
-    if (lease && onchain.onchainLeaseId) {
-      lease.onchainLeaseId = onchain.onchainLeaseId;
-    }
-    const accountPayments = payments.filter((p) =>
-      leases.some((l) => l.leaseId === p.leaseId && l.tenantAccountId === lease?.tenantAccountId)
-    );
-    const scoreSnapshot = calculateRentScore(lease?.tenantAccountId || intent.payerAccountId, accountPayments);
-
-    const tx: TransactionEvent = {
-      eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
-      accountId: lease?.tenantAccountId || intent.payerAccountId,
-      eventType: "PAYMENT_CONFIRMED",
-      status: "SUCCESS",
-      timestamp: confirmedAt,
-      txHash: parsed.data.txHash || onchain.txHash,
-      explorerUrl: toExplorerUrl(parsed.data.txHash || onchain.txHash)
-    };
-    transactions.unshift(tx);
-
-    return res.status(200).json({
-      paymentRecordId: onchain.paymentRecordId,
-      certificateTokenId: onchain.tokenId,
-      scoreDelta: 18,
-      newScore: scoreSnapshot.score
-    });
   });
 
-  router.get("/:accountId", (req, res) => {
-    const { accountId } = req.params;
-    const leaseIds = leases.filter((l) => l.tenantAccountId === accountId).map((l) => l.leaseId);
-    const items = payments.filter((p) => leaseIds.includes(p.leaseId));
-    return res.status(200).json({ items, total: items.length });
+  router.get("/:accountId", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const items = await listPaymentsByAccount(accountId);
+      return res.status(200).json({ items, total: items.length });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to fetch payments";
+      return res.status(500).json({ error: message });
+    }
   });
 
   return router;

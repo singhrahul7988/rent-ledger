@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { leases } from "../data/store.js";
+import { createLeaseRecord, listLeasesByAccount } from "../lib/persistence.js";
 
 const createLeaseSchema = z.object({
   tenantAccountId: z.string().min(3),
@@ -15,13 +15,18 @@ const createLeaseSchema = z.object({
 export function leasesRouter() {
   const router = Router();
 
-  router.get("/:accountId", (req, res) => {
-    const { accountId } = req.params;
-    const items = leases.filter((lease) => lease.tenantAccountId === accountId);
-    return res.status(200).json({ items, total: items.length });
+  router.get("/:accountId", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const items = await listLeasesByAccount(accountId);
+      return res.status(200).json({ items, total: items.length });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to fetch leases";
+      return res.status(500).json({ error: message });
+    }
   });
 
-  router.post("/", (req, res) => {
+  router.post("/", async (req, res) => {
     const parsed = createLeaseSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid lease payload", issues: parsed.error.flatten() });
@@ -38,7 +43,12 @@ export function leasesRouter() {
       status: "ACTIVE" as const
     };
 
-    leases.push(lease);
+    try {
+      await createLeaseRecord(lease);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create lease";
+      return res.status(500).json({ error: message });
+    }
 
     return res.status(201).json({
       leaseId: lease.leaseId,

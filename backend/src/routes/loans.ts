@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import { leases, loanApplications, loans, payments, transactions } from "../data/store.js";
+import { loanApplications, loans } from "../data/store.js";
 import { BlockchainService } from "../services/blockchainService.js";
 import { calculateRentScore, isTierEligible } from "../services/rentScore.js";
 import type { Loan, LoanApplication, TransactionEvent } from "../types.js";
+import { createTransactionRecord, listPaymentsByAccount } from "../lib/persistence.js";
 
 const eligibilitySchema = z.object({
   accountId: z.string().min(3),
@@ -64,61 +65,64 @@ export function loansRouter(blockchainService: BlockchainService) {
     return res.status(200).json({ items, total: items.length });
   });
 
-  router.post("/applications", (req, res) => {
+  router.post("/applications", async (req, res) => {
     const parsed = applicationSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid application payload", issues: parsed.error.flatten() });
     }
+    try {
+      const payload = parsed.data;
+      const terms = tierTerms[payload.tier];
+      const accountPayments = await listPaymentsByAccount(payload.accountId);
+      const score = calculateRentScore(payload.accountId, accountPayments).score;
 
-    const payload = parsed.data;
-    const terms = tierTerms[payload.tier];
-    const leaseIds = leases.filter((l) => l.tenantAccountId === payload.accountId).map((l) => l.leaseId);
-    const accountPayments = payments.filter((p) => leaseIds.includes(p.leaseId));
-    const score = calculateRentScore(payload.accountId, accountPayments).score;
+      if (!isTierEligible(score, payload.tier)) {
+        return res.status(400).json({ error: `Not eligible yet. Score required: ${terms.minScore}.` });
+      }
+      if (payload.requestedAmountUsd > terms.maxAmountUsd) {
+        return res.status(400).json({ error: "Requested amount exceeds tier limit." });
+      }
 
-    if (!isTierEligible(score, payload.tier)) {
-      return res.status(400).json({ error: `Not eligible yet. Score required: ${terms.minScore}.` });
+      const rawId = payload.idDocumentNumber.trim();
+      const maskedId = `${"*".repeat(Math.max(0, rawId.length - 4))}${rawId.slice(-4)}`;
+      const application: LoanApplication = {
+        applicationId: `loanapp_${randomUUID().slice(0, 8)}`,
+        accountId: payload.accountId,
+        tier: payload.tier,
+        requestedAmountUsd: payload.requestedAmountUsd,
+        requestedApr: terms.apr,
+        tenorMonths: terms.tenorMonths,
+        fullName: payload.fullName.trim(),
+        email: payload.email.trim().toLowerCase(),
+        phone: payload.phone.trim(),
+        dateOfBirth: payload.dateOfBirth,
+        annualIncomeUsd: payload.annualIncomeUsd,
+        employmentStatus: payload.employmentStatus,
+        purpose: payload.purpose.trim(),
+        idDocumentType: payload.idDocumentType,
+        idDocumentNumberMasked: maskedId,
+        addressLine1: payload.addressLine1.trim(),
+        city: payload.city.trim(),
+        country: payload.country.trim(),
+        postalCode: payload.postalCode.trim(),
+        consentKyc: true,
+        consentTerms: true,
+        status: "SUBMITTED",
+        createdAt: new Date().toISOString()
+      };
+
+      loanApplications.unshift(application);
+      return res.status(201).json({
+        applicationId: application.applicationId,
+        status: application.status,
+        submittedAt: application.createdAt,
+        message:
+          "Loan request submitted successfully. Our team will reach out shortly regarding confirmation."
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit loan application";
+      return res.status(500).json({ error: message });
     }
-    if (payload.requestedAmountUsd > terms.maxAmountUsd) {
-      return res.status(400).json({ error: "Requested amount exceeds tier limit." });
-    }
-
-    const rawId = payload.idDocumentNumber.trim();
-    const maskedId = `${"*".repeat(Math.max(0, rawId.length - 4))}${rawId.slice(-4)}`;
-    const application: LoanApplication = {
-      applicationId: `loanapp_${randomUUID().slice(0, 8)}`,
-      accountId: payload.accountId,
-      tier: payload.tier,
-      requestedAmountUsd: payload.requestedAmountUsd,
-      requestedApr: terms.apr,
-      tenorMonths: terms.tenorMonths,
-      fullName: payload.fullName.trim(),
-      email: payload.email.trim().toLowerCase(),
-      phone: payload.phone.trim(),
-      dateOfBirth: payload.dateOfBirth,
-      annualIncomeUsd: payload.annualIncomeUsd,
-      employmentStatus: payload.employmentStatus,
-      purpose: payload.purpose.trim(),
-      idDocumentType: payload.idDocumentType,
-      idDocumentNumberMasked: maskedId,
-      addressLine1: payload.addressLine1.trim(),
-      city: payload.city.trim(),
-      country: payload.country.trim(),
-      postalCode: payload.postalCode.trim(),
-      consentKyc: true,
-      consentTerms: true,
-      status: "SUBMITTED",
-      createdAt: new Date().toISOString()
-    };
-
-    loanApplications.unshift(application);
-    return res.status(201).json({
-      applicationId: application.applicationId,
-      status: application.status,
-      submittedAt: application.createdAt,
-      message:
-        "Loan request submitted successfully. Our team will reach out shortly regarding confirmation."
-    });
   });
 
   router.get("/:accountId", (req, res) => {
@@ -127,27 +131,31 @@ export function loansRouter(blockchainService: BlockchainService) {
     return res.status(200).json({ items, total: items.length });
   });
 
-  router.post("/eligibility", (req, res) => {
+  router.post("/eligibility", async (req, res) => {
     const parsed = eligibilitySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid eligibility payload", issues: parsed.error.flatten() });
     }
 
-    const { accountId, requestedTier } = parsed.data;
-    const leaseIds = leases.filter((l) => l.tenantAccountId === accountId).map((l) => l.leaseId);
-    const accountPayments = payments.filter((p) => leaseIds.includes(p.leaseId));
-    const score = calculateRentScore(accountId, accountPayments).score;
-    const terms = tierTerms[requestedTier];
-    const eligible = isTierEligible(score, requestedTier);
+    try {
+      const { accountId, requestedTier } = parsed.data;
+      const accountPayments = await listPaymentsByAccount(accountId);
+      const score = calculateRentScore(accountId, accountPayments).score;
+      const terms = tierTerms[requestedTier];
+      const eligible = isTierEligible(score, requestedTier);
 
-    return res.status(200).json({
-      eligible,
-      score,
-      requiredScore: terms.minScore,
-      maxAmountUsd: terms.maxAmountUsd,
-      apr: terms.apr,
-      tenorMonths: terms.tenorMonths
-    });
+      return res.status(200).json({
+        eligible,
+        score,
+        requiredScore: terms.minScore,
+        maxAmountUsd: terms.maxAmountUsd,
+        apr: terms.apr,
+        tenorMonths: terms.tenorMonths
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to evaluate eligibility";
+      return res.status(500).json({ error: message });
+    }
   });
 
   router.post("/request", async (req, res) => {
@@ -156,55 +164,59 @@ export function loansRouter(blockchainService: BlockchainService) {
       return res.status(400).json({ error: "Invalid loan payload", issues: parsed.error.flatten() });
     }
 
-    const { accountId, tier, amountUsd } = parsed.data;
-    const leaseIds = leases.filter((l) => l.tenantAccountId === accountId).map((l) => l.leaseId);
-    const accountPayments = payments.filter((p) => leaseIds.includes(p.leaseId));
-    const score = calculateRentScore(accountId, accountPayments).score;
-    const terms = tierTerms[tier];
+    try {
+      const { accountId, tier, amountUsd } = parsed.data;
+      const accountPayments = await listPaymentsByAccount(accountId);
+      const score = calculateRentScore(accountId, accountPayments).score;
+      const terms = tierTerms[tier];
 
-    if (!isTierEligible(score, tier)) {
-      return res.status(400).json({ error: "Account not eligible for this tier" });
+      if (!isTierEligible(score, tier)) {
+        return res.status(400).json({ error: "Account not eligible for this tier" });
+      }
+      if (amountUsd > terms.maxAmountUsd) {
+        return res.status(400).json({ error: "Requested amount exceeds tier limit" });
+      }
+
+      const chain = await blockchainService.requestLoanOnChain({
+        accountId,
+        tier,
+        amountUsd
+      });
+
+      const loan: Loan = {
+        loanId: chain.loanId,
+        accountId,
+        tier,
+        principalUsd: amountUsd,
+        apr: terms.apr,
+        disbursedAt: new Date().toISOString(),
+        nextInstallmentDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10),
+        status: "ACTIVE"
+      };
+      loans.unshift(loan);
+
+      const tx: TransactionEvent = {
+        eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
+        accountId,
+        eventType: "LOAN_REQUESTED",
+        status: "SUCCESS",
+        timestamp: new Date().toISOString(),
+        txHash: chain.txHash,
+        explorerUrl: toExplorerUrl(chain.txHash)
+      };
+      await createTransactionRecord(tx);
+
+      return res.status(201).json({
+        loanId: loan.loanId,
+        status: loan.status,
+        principalUsd: loan.principalUsd,
+        apr: loan.apr,
+        nextInstallmentDate: loan.nextInstallmentDate
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to process loan request";
+      return res.status(500).json({ error: message });
     }
-    if (amountUsd > terms.maxAmountUsd) {
-      return res.status(400).json({ error: "Requested amount exceeds tier limit" });
-    }
-
-    const chain = await blockchainService.requestLoanOnChain({
-      accountId,
-      tier,
-      amountUsd
-    });
-
-    const loan: Loan = {
-      loanId: chain.loanId,
-      accountId,
-      tier,
-      principalUsd: amountUsd,
-      apr: terms.apr,
-      disbursedAt: new Date().toISOString(),
-      nextInstallmentDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10),
-      status: "ACTIVE"
-    };
-    loans.unshift(loan);
-
-    const tx: TransactionEvent = {
-      eventId: `evt_${Math.random().toString(36).slice(2, 8)}`,
-      accountId,
-      eventType: "LOAN_REQUESTED",
-      status: "SUCCESS",
-      timestamp: new Date().toISOString(),
-      txHash: chain.txHash,
-      explorerUrl: toExplorerUrl(chain.txHash)
-    };
-    transactions.unshift(tx);
-
-    return res.status(201).json({
-      loanId: loan.loanId,
-      status: loan.status,
-      principalUsd: loan.principalUsd,
-      apr: loan.apr,
-      nextInstallmentDate: loan.nextInstallmentDate
-    });
   });
 
   return router;
