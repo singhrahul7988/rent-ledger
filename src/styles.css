@@ -449,6 +449,9 @@ body {
   border-radius: 16px;
   box-shadow: var(--shadow-card);
   padding: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .pricing-plan.featured {
@@ -456,18 +459,22 @@ body {
   box-shadow: 0 4px 12px rgba(232, 89, 12, 0.12), 0 16px 40px rgba(0, 0, 0, 0.06);
 }
 
-.pricing-badge {
-  display: inline-flex;
-  margin-bottom: 10px;
-  border-radius: 999px;
+.pricing-corner-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--color-orange);
   border: 1px solid #f5c8a8;
   background: #fff0e8;
-  color: var(--color-orange);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  padding: 5px 10px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-family: "DM Serif Display", serif;
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  transform: rotate(-6deg);
+  pointer-events: none;
 }
 
 .pricing-plan h2 {
@@ -508,6 +515,205 @@ body {
   padding: 0;
   display: grid;
   gap: 10px;
+}
+
+.pricing-plan .btn {
+  margin-top: auto;
+}
+
+.verify-tenant-page {
+  min-height: 100vh;
+  background: var(--color-cream);
+}
+
+.verify-tenant-main {
+  padding-top: 34px;
+  padding-bottom: 64px;
+  display: grid;
+  gap: 18px;
+}
+
+.verify-hero-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.verify-hero-card h1 {
+  margin: 12px 0 0;
+  font-family: "DM Serif Display", serif;
+  font-size: 40px;
+  line-height: 1.12;
+  color: var(--color-gray-900);
+}
+
+.verify-subtext {
+  margin: 12px 0 0;
+  max-width: 760px;
+  color: var(--color-gray-600);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.verify-form {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.verify-form input {
+  border: 1px solid var(--color-gray-100);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-gray-900);
+  padding: 12px 14px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+}
+
+.verify-hint {
+  margin: 10px 0 0;
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+.verify-results {
+  display: grid;
+  gap: 14px;
+}
+
+.verify-headline {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.verify-headline h2 {
+  margin: 0;
+  font-size: 24px;
+  font-family: "DM Serif Display", serif;
+}
+
+.verify-headline p {
+  margin: 8px 0 0;
+  color: var(--color-gray-600);
+  font-size: 14px;
+}
+
+.verify-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.verify-status-pill.success {
+  background: var(--color-green-light);
+  border-color: #bfe2cf;
+  color: var(--color-green);
+}
+
+.verify-status-pill.warning {
+  background: var(--color-amber-light);
+  border-color: #f6d79f;
+  color: var(--color-amber);
+}
+
+.verify-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.verify-metric-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+}
+
+.verify-metric-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #999990;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.verify-metric-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: "DM Serif Display", serif;
+  font-size: 38px;
+  line-height: 1;
+  color: var(--color-navy);
+}
+
+.verify-metric-card span {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+.verify-table-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-100);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+}
+
+.verify-table-wrap {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.verify-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.verify-table th,
+.verify-table td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--color-gray-100);
+  font-size: 14px;
+}
+
+.verify-table th {
+  color: #999990;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 12px;
+}
+
+.verify-proof-link {
+  color: var(--color-navy);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.verify-proof-link:hover {
+  text-decoration: underline;
 }
 
 .pricing-features li {

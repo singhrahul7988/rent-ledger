@@ -71,6 +71,11 @@ export function getLoans(accountId) {
   return apiRequest(`/loans/${accountId}`);
 }
 
+export function resolveTenantQuery(query) {
+  const encoded = encodeURIComponent(String(query || "").trim());
+  return apiRequest(`/tenants/resolve?query=${encoded}`);
+}
+
 export function createLease(payload) {
   return apiRequest("/leases", {
     method: "POST",

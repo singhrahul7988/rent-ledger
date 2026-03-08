@@ -6,6 +6,7 @@ import { paymentsRouter } from "./routes/payments.js";
 import { rentScoreRouter } from "./routes/rentscore.js";
 import { loansRouter } from "./routes/loans.js";
 import { transactionsRouter } from "./routes/transactions.js";
+import { tenantsRouter } from "./routes/tenants.js";
 import { BlockchainService } from "./services/blockchainService.js";
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/v1/payments", paymentsRouter(blockchainService));
 app.use("/api/v1/rentscore", rentScoreRouter());
 app.use("/api/v1/loans", loansRouter(blockchainService));
 app.use("/api/v1/transactions", transactionsRouter());
+app.use("/api/v1/tenants", tenantsRouter());
 
 app.listen(port, () => {
   console.log(`rentledger-backend listening on port ${port}`);

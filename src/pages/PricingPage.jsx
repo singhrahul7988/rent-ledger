@@ -74,7 +74,7 @@ export default function PricingPage() {
         <section className="pricing-grid" aria-label="Pricing plans">
           {PLANS.map((plan) => (
             <article className={`pricing-plan${plan.featured ? " featured" : ""}`} key={plan.name}>
-              {plan.featured ? <span className="pricing-badge">Most Popular</span> : null}
+              {plan.featured ? <span className="pricing-corner-tag">Popular</span> : null}
               <h2>{plan.name}</h2>
               <p className="pricing-price">
                 {plan.price}

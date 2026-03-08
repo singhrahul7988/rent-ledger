@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function ForLandlords() {
   return (
     <section className="landlords" id="for-landlords">
@@ -11,9 +13,9 @@ export default function ForLandlords() {
             <li>Zero crypto knowledge needed</li>
             <li>Works in any country, any currency</li>
           </ul>
-          <button className="btn btn-secondary landlord-cta-btn" type="button">
+          <Link to="/verify-tenant" className="btn btn-secondary btn-link landlord-cta-btn">
             Verify a Tenant Free -&gt;
-          </button>
+          </Link>
         </div>
 
         <article className="verification-card landlord-profile-card">
@@ -49,9 +51,9 @@ export default function ForLandlords() {
               <span>TENURE</span>
             </div>
           </div>
-          <button className="btn btn-primary share-btn landlord-share-btn">
+          <Link to="/verify-tenant" className="btn btn-primary btn-link share-btn landlord-share-btn">
             Share Link
-          </button>
+          </Link>
         </article>
       </div>
     </section>

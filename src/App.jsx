@@ -15,6 +15,7 @@ import SettingsPage from "./pages/dashboard/SettingsPage";
 import HelpPage from "./pages/dashboard/HelpPage";
 import CertificateViewPage from "./pages/CertificateViewPage";
 import SharedCreditReportPage from "./pages/SharedCreditReportPage";
+import VerifyTenantPage from "./pages/VerifyTenantPage";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/verify-tenant" element={<VerifyTenantPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<Navigate to="/signin" replace />} />
         <Route path="/certificate/:paymentRecordId" element={<CertificateViewPage />} />
